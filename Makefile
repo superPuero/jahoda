@@ -19,6 +19,7 @@ CC_COMMON_DEBUG_FLAGS = $(CC_COMMON_FLAGS) -O0 -g -gcodeview
 
 CC_WINDOWS_FLAGS = -D_GLFW_WIN32
 CC_LINUX_FLAGS = -D_GLFW_X11
+CC_MAC_FLAGS = -D_GLFW_COCOA
 
 #----------------------
 
@@ -26,6 +27,7 @@ CC_LINUX_FLAGS = -D_GLFW_X11
 LIB_COMMON_FLAGS = $(LIBRARY_DIRECTORIES)
 LIB_WINDOWS_FLAGS = -lvulkan-1 -lgdi32
 LIB_LINUX_FLAGS = -lvulkan -lX11 -lpthread -ldl -lm
+LIB_MAC_FLAGS = -lvulkan -framework Cocoa -framework IOKit -framework CoreVideo
 #-----------------
 
 # --- sources ---
@@ -71,16 +73,44 @@ clean_windows:
 clean_shaders_windows: 
 	del /S /Q shaders\*.spv
 
-
 # ==============================================================================
 #                               LINUX TARGETS
 # ==============================================================================
+
 release_linux: CC_FLAGS = $(CC_COMMON_RELEASE_FLAGS) $(CC_LINUX_FLAGS)
 release_linux: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_LINUX_FLAGS)
 
 # We override the flags manually here so we don't pass the Windows -gcodeview flag
 debug_linux: CC_FLAGS = $(CC_COMMON_FLAGS) -O0 -g $(CC_LINUX_FLAGS)
 debug_linux: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_LINUX_FLAGS)
+
+release_linux: $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
+
+debug_linux: $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
+
+clean_linux_all:
+	find . -type f -name '*.o' -delete
+	rm -f $(TARGET)
+
+clean_linux:  
+	rm -f src/core/*.o src/base/*.o src/gfx/*.o *.o
+	rm -f $(TARGET)
+
+clean_shaders_linux: 
+	rm -f shaders/*.spv
+
+# ==============================================================================
+#                               MAC TARGETS
+# ==============================================================================
+
+release_macos: CC_FLAGS = $(CC_COMMON_RELEASE_FLAGS) $(CC_MAC_FLAGS)
+release_macos: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_MAC_FLAGS)
+
+# We override the flags manually here so we don't pass the Windows -gcodeview flag
+debug_linux: CC_FLAGS = $(CC_COMMON_FLAGS) -O0 -g $(CC_MAC_FLAGS)
+debug_linux: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_MAC_FLAGS)
 
 release_linux: $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
