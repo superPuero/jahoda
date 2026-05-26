@@ -13,20 +13,28 @@ LIBRARY_DIRECTORIES = -L"$(VULKAN_SDK)/lib"
 
 CC_COMMON_FLAGS = -std=c99 -Wall -Wextra $(INCLUDE_DIRECTORIES)
 CC_COMMON_RELEASE_FLAGS = $(CC_COMMON_FLAGS) -O3 -DNDEBUG
-CC_COMMON_DEBUG_FLAGS = $(CC_COMMON_FLAGS) -O0 -g -gcodeview
+
+# Note: -gcodeview is Windows specific. We will strip it out for the Linux debug target.
+CC_COMMON_DEBUG_FLAGS = $(CC_COMMON_FLAGS) -O0 -g -gcodeview 
+
 CC_WINDOWS_FLAGS = -D_GLFW_WIN32
+CC_LINUX_FLAGS = -D_GLFW_X11
 
 #----------------------
 
 # --- lib flags ---
 LIB_COMMON_FLAGS = $(LIBRARY_DIRECTORIES)
 LIB_WINDOWS_FLAGS = -lvulkan-1 -lgdi32
+LIB_LINUX_FLAGS = -lvulkan -lX11 -lpthread -ldl -lm
 #-----------------
 
 # --- sources ---
 CORE_SRCS = $(wildcard src/core/*.c)
 BASE_SRCS = $(wildcard src/base/*.c)
 GFX_SRCS = $(wildcard src/gfx/*.c)
+
+# Assuming your glfw/src folder is pruned for the target OS, 
+# or GLFW's internal #ifdefs are handling the compilation of unused platform files.
 GLFW_SRCS = $(wildcard vendors/glfw/src/*.c)
 TRUETYPE_SRC = $(wildcard vendors/stb_truetype/*.c)
 FAST_OBJ_SRC = $(wildcard vendors/fast_obj/*.c)
@@ -36,7 +44,9 @@ SRCS = main.c $(CORE_SRCS) $(BASE_SRCS) $(GLFW_SRCS) $(GFX_SRCS) $(TRUETYPE_SRC)
 
 OBJS = $(SRCS:.c=.o)
 
-# --- windows targets ---
+# ==============================================================================
+#                              WINDOWS TARGETS
+# ==============================================================================
 release_windows: CC_FLAGS = $(CC_COMMON_RELEASE_FLAGS) $(CC_WINDOWS_FLAGS)
 release_windows: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_WINDOWS_FLAGS)
 
@@ -53,32 +63,56 @@ clean_windows_all:
 	del /S /Q *.o
 	del /Q $(TARGET).exe *.pdb
 
-clean_windows:	
+clean_windows:  
 	del /S /Q src\*.o
 	del /Q *.o
 	del /Q $(TARGET).exe *.pdb
 
-# ----------------------
+clean_shaders_windows: 
+	del /S /Q shaders\*.spv
 
-# todo: linux targets
 
-# --- shared rules ---
+# ==============================================================================
+#                               LINUX TARGETS
+# ==============================================================================
+release_linux: CC_FLAGS = $(CC_COMMON_RELEASE_FLAGS) $(CC_LINUX_FLAGS)
+release_linux: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_LINUX_FLAGS)
+
+# We override the flags manually here so we don't pass the Windows -gcodeview flag
+debug_linux: CC_FLAGS = $(CC_COMMON_FLAGS) -O0 -g $(CC_LINUX_FLAGS)
+debug_linux: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_LINUX_FLAGS)
+
+release_linux: $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
+
+debug_linux: $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
+
+clean_linux_all:
+	find . -type f -name '*.o' -delete
+	rm -f $(TARGET)
+
+clean_linux:  
+	rm -f src/core/*.o src/base/*.o src/gfx/*.o *.o
+	rm -f $(TARGET)
+
+clean_shaders_linux: 
+	rm -f shaders/*.spv
+
+
+# ==============================================================================
+#                               SHARED RULES
+# ==============================================================================
 %.o: %.c
 	$(CC) $(CC_FLAGS) -c $< -o $@
-# --------------------
 
 SHADER_SRCS = $(wildcard shaders/*.vert) $(wildcard shaders/*.frag)
 SHADER_SPVS = $(SHADER_SRCS:%=%.spv)
 
 compile_shaders: $(SHADER_SPVS)
 
-clean_shaders: 
-	del /S /Q shaders\*.spv
-
 %.frag.spv: %.frag
 	glslc $< -o $@
 
 %.vert.spv: %.vert
 	glslc $< -o $@
-
-
