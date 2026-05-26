@@ -37,14 +37,20 @@ GFX_SRCS = $(wildcard src/gfx/*.c)
 
 # Assuming your glfw/src folder is pruned for the target OS, 
 # or GLFW's internal #ifdefs are handling the compilation of unused platform files.
-GLFW_SRCS = $(wildcard vendors/glfw/src/*.c) $(wildcard vendors/glfw/src/*.m)
+GLFW_SRCS = $(wildcard vendors/glfw/src/*.c)
+GLFW_M_SRCS =  $(wildcard vendors/glfw/src/*.m)
 TRUETYPE_SRC = $(wildcard vendors/stb_truetype/*.c)
 FAST_OBJ_SRC = $(wildcard vendors/fast_obj/*.c)
 
 SRCS = main.c $(CORE_SRCS) $(BASE_SRCS) $(GLFW_SRCS) $(GFX_SRCS) $(TRUETYPE_SRC) $(FAST_OBJ_SRC) 
+M_SRCS = $(GLFW_M_SRCS)
+
 # ---------------
 
-OBJS = $(patsubst %.m, %.o, $(patsubst %.c, %.o, $(SRCS)))
+C_OBJS = $(SRCS:.c=.o)
+M_OBJS = $(M_SRCS:.m=.o)
+
+OBJS = $(C_OBJS) $(M_OBJS)  
 
 # ==============================================================================
 #                              WINDOWS TARGETS
@@ -137,7 +143,7 @@ clean_shaders_macos:
 	$(CC) $(CC_FLAGS) -c $< -o $@
 
 %.o: %.m
-	$(CC) $(CC_FLAGS) -m $< -o $@
+	$(CC) $(CC_FLAGS) -c $< -o $@
 
 SHADER_SRCS = $(wildcard shaders/*.vert) $(wildcard shaders/*.frag)
 SHADER_SPVS = $(SHADER_SRCS:%=%.spv)
