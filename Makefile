@@ -109,24 +109,24 @@ release_macos: CC_FLAGS = $(CC_COMMON_RELEASE_FLAGS) $(CC_MAC_FLAGS)
 release_macos: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_MAC_FLAGS)
 
 # We override the flags manually here so we don't pass the Windows -gcodeview flag
-debug_linux: CC_FLAGS = $(CC_COMMON_FLAGS) -O0 -g $(CC_MAC_FLAGS)
-debug_linux: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_MAC_FLAGS)
+debug_macos: CC_FLAGS = $(CC_COMMON_FLAGS) -O0 -g $(CC_MAC_FLAGS)
+debug_macos: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_MAC_FLAGS)
 
-release_linux: $(OBJS)
+release_macos: $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
 
-debug_linux: $(OBJS)
+debug_macos: $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
 
-clean_linux_all:
+clean_macos_all:
 	find . -type f -name '*.o' -delete
 	rm -f $(TARGET)
 
-clean_linux:  
+clean_macos:  
 	rm -f src/core/*.o src/base/*.o src/gfx/*.o *.o
 	rm -f $(TARGET)
 
-clean_shaders_linux: 
+clean_shaders_macos: 
 	rm -f shaders/*.spv
 
 
