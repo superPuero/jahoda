@@ -25,8 +25,6 @@ void poll_event(env* env)
 	env->exit = window_should_close(&env->win);
 }
 
-f32 mem_usage;
-
 void update(env* env)
 {
 	tick_info_update(&env->tick_info);
@@ -56,16 +54,17 @@ void update(env* env)
 		env->ui.state.mouse_pos
 	);
 
-	str fps_text = str_from_fmt(&env->pf_arena, "dt: %.3f", env->tick_info.dt);
-	str dt_text = str_from_fmt(&env->pf_arena, "fps: %.2f", 1.0f/env->tick_info.dt);
-	str prev_frame_mem_usage = str_from_fmt(&env->pf_arena, "pf_arena(env) usage: %.2fKb", mem_usage);
+	str dt_text = str_from_fmt(&env->pf_arena, "dt: %.3f", env->tick_info.dt);
+	str fps_text = str_from_fmt(&env->pf_arena, "fps: %.2f", 1.0f/env->tick_info.dt);
+	str prev_frame_mem_usage = str_from_fmt(&env->pf_arena, "pf_arena(env) usage: %.2fKb", env->pf_arena_last_frame_usage);
 	
 	ui_text(
 		&env->ui, 
 		strv_from_str(&prev_frame_mem_usage), 
-		(vec3_f32){1,1,1},(vec2_f64){.x = 200, .y = 300}
+		(vec3_f32){1,1,1},
+		(vec2_f64){.x = 200, .y = 300}
 	);
-		
+
 	ui_text(
 		&env->ui, 
 		strv_from_str(&fps_text), 
@@ -144,7 +143,7 @@ void janohda_main(int argc, char **argv)
 		if(window_is_minimized(&jahoda.win)) { glfwWaitEvents(); }
 		else { try_render(&jahoda); }
 
-		mem_usage = jahoda.pf_arena.current/1000.f;
+		jahoda.pf_arena_last_frame_usage = jahoda.pf_arena.current/1000.f;
 
 		arena_reset(&jahoda.pf_arena);
     }

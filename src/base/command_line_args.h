@@ -9,7 +9,7 @@
 
 #define command_line_data_args\
 	XXXX(ww, u32, 800, "window width")\
-	XXXX(wh, u32, 800, "window height")
+	XXXX(wh, u32, 800, "window height")    
 
 typedef struct
 {

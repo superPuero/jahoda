@@ -17,6 +17,7 @@ typedef struct
 	command_line_args command_line_args;
 	arena st_arena;
 	arena pf_arena;
+	f32 pf_arena_last_frame_usage;
 	bool8 exit;
 	glfw_context glfw_ctx;
 	window win;
