@@ -44,7 +44,7 @@ FAST_OBJ_SRC = $(wildcard vendors/fast_obj/*.c)
 SRCS = main.c $(CORE_SRCS) $(BASE_SRCS) $(GLFW_SRCS) $(GFX_SRCS) $(TRUETYPE_SRC) $(FAST_OBJ_SRC) 
 # ---------------
 
-OBJS = $(SRCS:.c=.o) 
+OBJS = $(SRCS:.c=.o) $(SRCS:.m=.o) 
 
 # ==============================================================================
 #                              WINDOWS TARGETS
