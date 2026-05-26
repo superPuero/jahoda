@@ -1,4 +1,5 @@
 #include "command_line_args.h"	
+#include <errno.h>
 
 static u32 u32_parse(char *str)
 {    
