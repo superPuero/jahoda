@@ -44,7 +44,7 @@ FAST_OBJ_SRC = $(wildcard vendors/fast_obj/*.c)
 SRCS = main.c $(CORE_SRCS) $(BASE_SRCS) $(GLFW_SRCS) $(GFX_SRCS) $(TRUETYPE_SRC) $(FAST_OBJ_SRC) 
 # ---------------
 
-OBJS = $(SRCS:.c=.o) $(SRCS:.m=.o) 
+OBJS = $(patsubst %.m, %.o, $(patsubst %.c, %.o, $(SRCS)))
 
 # ==============================================================================
 #                              WINDOWS TARGETS
@@ -135,6 +135,9 @@ clean_shaders_macos:
 # ==============================================================================
 %.o: %.c
 	$(CC) $(CC_FLAGS) -c $< -o $@
+
+%.o: %.m
+	$(CC) $(CC_FLAGS) -m $< -o $@
 
 SHADER_SRCS = $(wildcard shaders/*.vert) $(wildcard shaders/*.frag)
 SHADER_SPVS = $(SHADER_SRCS:%=%.spv)
