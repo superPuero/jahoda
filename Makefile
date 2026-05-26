@@ -47,10 +47,8 @@ M_SRCS = $(GLFW_M_SRCS)
 
 # ---------------
 
-C_OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:.c=.o)
 M_OBJS = $(M_SRCS:.m=.o)
-
-OBJS = $(C_OBJS) $(M_OBJS)  
 
 # ==============================================================================
 #                              WINDOWS TARGETS
@@ -118,11 +116,11 @@ release_macos: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_MAC_FLAGS)
 debug_macos: CC_FLAGS = $(CC_COMMON_FLAGS) -O0 -g $(CC_MAC_FLAGS)
 debug_macos: LIB_FLAGS = $(LIB_COMMON_FLAGS) $(LIB_MAC_FLAGS)
 
-release_macos: $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
+release_macos: $(OBJS) $(M_OBJS)
+	$(CC) $(OBJS) $(M_OBJS) -o $(TARGET) $(LIB_FLAGS)
 
-debug_macos: $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LIB_FLAGS)
+debug_macos: $(OBJS) $(M_OBJS)
+	$(CC) $(OBJS) $(M_OBJS) -o $(TARGET) $(LIB_FLAGS)
 
 clean_macos_all:
 	find . -type f -name '*.o' -delete
