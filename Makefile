@@ -37,14 +37,14 @@ GFX_SRCS = $(wildcard src/gfx/*.c)
 
 # Assuming your glfw/src folder is pruned for the target OS, 
 # or GLFW's internal #ifdefs are handling the compilation of unused platform files.
-GLFW_SRCS = $(wildcard vendors/glfw/src/*.c)
+GLFW_SRCS = $(wildcard vendors/glfw/src/*.c) $(wildcard vendors/glfw/src/*.m)
 TRUETYPE_SRC = $(wildcard vendors/stb_truetype/*.c)
 FAST_OBJ_SRC = $(wildcard vendors/fast_obj/*.c)
 
-SRCS = main.c $(CORE_SRCS) $(BASE_SRCS) $(GLFW_SRCS) $(GFX_SRCS) $(TRUETYPE_SRC) $(FAST_OBJ_SRC)
+SRCS = main.c $(CORE_SRCS) $(BASE_SRCS) $(GLFW_SRCS) $(GFX_SRCS) $(TRUETYPE_SRC) $(FAST_OBJ_SRC) 
 # ---------------
 
-OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:.c=.o) 
 
 # ==============================================================================
 #                              WINDOWS TARGETS
