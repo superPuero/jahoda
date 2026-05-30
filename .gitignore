@@ -2,3 +2,4 @@
 *.rdi
 *.exe
 *.o
+.vscode
