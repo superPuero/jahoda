@@ -1,7 +1,6 @@
-LIB_DIRECTORIES += -L"$(VULKAN_SDK)/lib" -L"$(CUDA_PATH)/lib/x64"
-LIB_FLAGS += -lvulkan-1 -lgdi32 -lUser32 -lShell32 -lcudart
+LIB_DIRECTORIES += -L"$(VULKAN_SDK)/lib"
+LIB_FLAGS += -lvulkan-1 -lgdi32
 
-CC_FLAGS += -D_GLFW_WIN32
 CC_DEBUG_FLAGS += -gcodeview
 
 clear_all:
