@@ -106,6 +106,7 @@ do\
 #define verify(expr, ...) verifyl(verify_fail, expr, __VA_ARGS__)
 
 #ifdef jahoda_debug
+#define dbg(...) __VA_ARGS__
 #define dbg_verifyl(label, expr, ...)\
 do\
 {\
@@ -118,8 +119,9 @@ do\
 #define dbg_verify(expr, ...) dbg_verifyl(dbg_verify_fail, expr, __VA_ARGS__)
 
 #else 
+#define dbg(...)
+#define dbg_verify(expr, ...) (void)0
 #define dbg_verifyl(label, expr, ...) (void)0
-#define dbg_verify(label, expr, ...) (void)0
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)

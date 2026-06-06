@@ -702,7 +702,7 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
     vkCmdEndRenderPass(cmd);	
 }
 
-void ui_begin(ui *ui, ui_state new_state)
+void ui_refresh(ui *ui, ui_state new_state)
 {
 	if(!new_state.mouse_down && ui->state.mouse_down)
 	{

@@ -1,6 +1,6 @@
 #include <signal.h>
 
-#include "jahoda/base/env.h"
+#include "env.h"
 
 void janohda_main(int argc, char **argv);
 

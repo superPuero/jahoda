@@ -4,8 +4,8 @@
 #include "vk_physical_device.h"
 #include "window.h"
 
-#define jahoda_vk_present_mode VK_PRESENT_MODE_FIFO_KHR
-// #define jahoda_vk_present_mode VK_PRESENT_MODE_MAILBOX_KHR
+// #define jahoda_vk_present_mode VK_PRESENT_MODE_FIFO_KHR
+#define jahoda_vk_present_mode VK_PRESENT_MODE_MAILBOX_KHR
 // #define jahoda_vk_present_mode VK_PRESENT_MODE_IMMEDIATE_KHR
  
 #define jahoda_vk_present_mode_str xstringify(jahoda_vk_present_mode)

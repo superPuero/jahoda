@@ -1,11 +1,15 @@
 #include <signal.h>
 
-#include "jahoda/base/env.h"
+#include "env.h"
+#include "galaxy_nn.h"
+
+#define data_entries 10
+#define data_features 2
 
 void janohda_main(int argc, char **argv);
 
 int main(int argc, char **argv)
-{
+{	
 	janohda_main(argc, argv);
     return 0;
 }
@@ -16,74 +20,17 @@ void poll_event(env *env)
 	env->exit = window_should_close(&env->win);
 }
 
-vec3_f32 col = {1,1,0};
-
-u32 counter = 0;
-u32 upgrade_cost = 10;
-u32 adder = 1;
-
 void update(env *env)
 {
 	tick_info_update(&env->tick_info);
 
-	ui_begin(
+	ui_refresh(
 		&env->ui, 
 		(ui_state){
 			.mouse_down = window_mouse_button_down(&env->win, GLFW_MOUSE_BUTTON_1), 
 			.mouse_pos = window_mouse_pos(&env->win)
 		}
 	);
-
-	ui_text(
-		&env->ui, 
-		(vec3_f32){ 1, 1, 1 }, 
-		(vec2_f64){ .x = 700, .y = 100 },
-		"Fps: %.2f",  1.0f / env->tick_info.dt 
-	);
-	
-	ui_text(
-		&env->ui, 
-		(vec3_f32){ 1, 1, 1 }, 
-		(vec2_f64){ .x = 700, .y = 200 },
-		"dt: %.2f", env->tick_info.dt 
-	);
-
-	ui_text(
-		&env->ui, 
-		(vec3_f32){ 1, 1, 1 }, 
-		(vec2_f64){ .x = 200, .y = 100 },
-		"Money: %lu", counter
-	);
-
-	if(ui_button(
-		&env->ui, 
-		(vec3_f32){ 0.1, 0.1, 0.1 },
-		(vec3_f32){ 1, 1, 1 },
-		(vec2_f64){ .x = 200, .y = 230 },
-		"Click: %lu", adder 
-	))
-	{
-		counter += adder;
-	}
-
-	if(ui_button(
-		&env->ui, 
-		(vec3_f32){ 0.1, 0.1, 0.1 },
-		(vec3_f32){ 1, 1, 1 },
-		(vec2_f64){ .x = 200, .y = 350 },
-		"Upgrade X2 click: %lu", upgrade_cost 
-	))
-	{
-		if(counter >= upgrade_cost)
-		{
-			counter -= upgrade_cost;
-			adder *= 2;
-			upgrade_cost *= 1.9f;
-		}
-	}
-
-
-
 }
 
 void try_render(env *env)
@@ -138,6 +85,9 @@ void interrupt_handle(int sig)
 void janohda_main(int argc, char **argv)
 {
 	env jahoda = env_make(argc, argv); 
+	galaxy_nn_context galaxy = galaxy_nn_context_from_csv(&jahoda.st_arena, &jahoda.pf_arena, strv_from_cstr("prjects/ml_dev/galaxydataset.csv"));
+	
+	for(uz i = 0; i < 1000; i++)
 
 	env_ptr = &jahoda;
 	signal(SIGINT, interrupt_handle);

@@ -114,7 +114,7 @@ typedef struct
 } ui;
 
 
-void ui_begin(ui *ctx, ui_state new_state);
+void ui_refresh(ui *ctx, ui_state new_state);
 void ui_end(ui *ui);
 
 void ui_text(ui *ctx, vec3_f32 color, vec2_f64 position, const u8 *fmt, ...);

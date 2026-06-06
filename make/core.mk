@@ -18,6 +18,8 @@ endif
 
 CC = clang
 
+BUILD_DIR = build
+
 TARGET = jahoda
 
 INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include" -I"vendors/glfw/include" -I"vendors/stb_truetype" -I"vendors/stb_image" -I.
@@ -35,7 +37,7 @@ include vendors/vendors.mk
 OBJS = $(SRCS:.c=.o)
 
 basic_build: $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LIB_DIRECTORIES) $(LIB_FLAGS)
+	$(CC) $(OBJS) $(CC_FLAGS) -o $(TARGET) $(LIB_DIRECTORIES) $(LIB_FLAGS)
 
 %.o: %.c
 	$(CC) $(CC_FLAGS) -c $< -o $@

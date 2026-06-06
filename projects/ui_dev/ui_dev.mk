@@ -1,5 +1,4 @@
-SRCS += projects/ui_dev/main.c
-
+SRCS += projects/ui_dev/main.c projects/ui_dev/env.c 
 include make/core.mk
 
 TARGET = ui_dev

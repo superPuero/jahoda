@@ -37,7 +37,7 @@ void *arena_push_unzeroed(arena*arena, uz size, uz alignment)
 
 	if(arena->current > arena->capacity)
 	{
-		printf("arena [%s] overflow\n", arena->name);
+		err("arena [%s] overflow curr: %zu, capacity: %zu", arena->name, arena->current, arena->capacity);
 		assert(0);
 	}
 

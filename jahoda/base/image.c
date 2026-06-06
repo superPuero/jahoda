@@ -10,7 +10,7 @@ image image_load(arena *pf_arena, arena *storage_arena, strv path)
     image out = {0};
     str path_nt = str_from_view_nt(pf_arena, path);
     stbi_set_flip_vertically_on_load(true);
-    stbi_load(path_nt.data, &out.extent.x, &out.extent.y, &out.channels, 4);    
+    out.data = stbi_load(path_nt.data, &out.extent.x, &out.extent.y, &out.channels, 4);    
     return out;
 }
 

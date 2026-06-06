@@ -1,6 +1,6 @@
-SRCS += projects/cuda_test/main.c
+SRCS += projects/cuda_test/main.c projects/cuda_test/env.c 
 
-include make/make/core.mk
+include make/core.mk
 
 TARGET = cuda_test
 
@@ -16,11 +16,13 @@ LIBRARY_DIRECTORIES += -L"$(CUDA_PATH)/lib/x64"
 LIB_FLAGS += -lUser32 -lShell32 -lcudart
 INCLUDE_DIRECTORIES += -I"$(CUDA_PATH)/include"
 
-CC = clang -target x86_64-pc-windows-msvc
-NVCC = nvcc
-NVCC_FLAGS = -O3 -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64"
+# yet again windows shows everyone who is dumbes kid in the room
+VCVARS = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 
-CUDA_SRCS = $(wildcard pojects/cuda_test/cuda*.cu)
+CC = call $(VCVARS) >nul && clang -target x86_64-pc-windows-msvc
+NVCC = call $(VCVARS) >nul && nvcc
+
+CUDA_SRCS = $(wildcard projects/cuda_test/cuda*.cu)
 CUDA_OBJS = $(CUDA_SRCS:.cu=.o)
 
 OBJS += $(CUDA_OBJS)
@@ -28,10 +30,10 @@ OBJS += $(CUDA_OBJS)
 nvcc_build: $(OBJS)
 	$(NVCC) $(NVCC_FLAGS) $(OBJS) -o $(TARGET) $(LIB_DIRECTORIES) $(LIB_FLAGS)
 
-release: NVCC_FLAGS += CC_RELEASE_FLAGS
+release: NVCC_FLAGS += -O3
 release: nvcc_build
 
-debug: NVCC_FLAGS += CC_DEBUG_FLAGS
+debug: NVCC_FLAGS += -O0
 debug: nvcc_build
 
 %.o: %.cu
