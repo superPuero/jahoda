@@ -9,22 +9,26 @@
 #define Mb(expr) Kb(expr)  *1024ULL
 #define Gb(expr) Mb(expr)  *1024ULL
 
-#define arena_name_max_len 256
+#define arena_name_max_len 64
 
-#define arena_default_capacity Kb(4096)
+#define arena_page_size Kb(4)
 #define arena_default_name "unnamed"
 
-typedef struct
-{
-	u8 *mem;
-	uz current;
-	uz capacity;
-	char name[arena_name_max_len];
-} arena;
+typedef u8* arena;
+
+// typedef struct
+// {
+	// u8 *mem;
+	// uz current;
+	// uz capacity;
+	// char name[arena_name_max_len];
+// } arena;
+
+typedef struct uz arena_marker;
 
 typedef struct
 {
-	arena *arena;
+	arena arena;
 	uz point;
 } marker;
 
@@ -40,15 +44,16 @@ typedef struct
 	strv name;
 } arena_params;
 
-#define arena_make(...) arena_make_((arena_params){.name = arena_default_name, .capacity = arena_default_capacity, __VA_ARGS__})
+#define arena_make(...) arena_make_((arena_params){.name = arena_default_name, .capacity = arena_page_size, __VA_ARGS__})
 arena arena_make_(arena_params params);
 
-void arena_reset(arena *arena);
-void arena_release(arena *arena);
-marker arena_mark(arena *arena); 
+uz arena_current(arena arena);
+void arena_reset(arena arena);
+void arena_release(arena arena);
+marker arena_mark(arena arena); 
 void arena_pop_to_marker(marker); 
 
 
-void *arena_push(arena *arena, uz size, uz alignment, bool8 zero);
+void *arena_push(arena arena, uz size, uz alignment, bool8 zero);
 
 #endif

@@ -20,7 +20,6 @@ typedef struct
 	uz point;
 } gpu_marker;
 
-
 gpu_arena gpu_arena_make(vk_device *device, VkDeviceSize capacity, u32 memory_type_index, strv name, bool8 map);
 gpu_marker gpu_arena_mark(gpu_arena *arena);
 

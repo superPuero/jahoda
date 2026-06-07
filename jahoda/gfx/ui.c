@@ -12,10 +12,10 @@ typedef struct
 	vec2_f32 padding; 
 } push_constants;
 
-ui ui_make(arena *pf_arena, gpu_context *gpu, font_manager *fonts, font_id font_id)
+ui ui_make(arena pf_arena, gpu_context *gpu, font_manager *fonts, font_id font_id)
 {	
-	strv vertex_shader_path = strv_from_cstr("shaders/text.vert.spv");
-	strv fragment_shader_path = strv_from_cstr("shaders/text.frag.spv");
+	strv vertex_shader_path = strv_from_cstr("assets/shaders/text.vert.spv");
+	strv fragment_shader_path = strv_from_cstr("assets/shaders/text.frag.spv");
 	
 	ui out = {0};
 
@@ -489,7 +489,7 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
 {
 	if(gpu->swapchain_was_refreshed)
 	{
-		arena *pf_arena = ui->pf_arena;
+		arena pf_arena = ui->pf_arena;
 		font_manager *fonts = ui->fonts;
 		font_id font_id = ui->font_id;
 
@@ -714,7 +714,7 @@ void ui_refresh(ui *ui, ui_state new_state)
 	ui->nodes = (ui_node_da){0};
 
 	// @todo: change magic 128 so something meaningful	
-	da_reserve(ui->pf_arena, &ui->nodes, 128);
+	da_reserve(ui->pf_arena, &ui->nodes, 256);
 }
 
 void ui_text(ui *ui, vec3_f32 color, vec2_f64 position, const u8 *fmt, ...)
@@ -767,7 +767,7 @@ bool8 ui_button(ui *ui, vec3_f32 color, vec3_f32 text_color, vec2_f64 position, 
 	ui_node *node = da_last(&ui->nodes);
 
 	node->button.measured_size = (vec2_f64){
-		.x = font_measure_text_width(&ui->fonts->entries[ui->font_id].altas, strv_from_str(&node->button.text)) + 30,
+		.x = font_measure_text_width(&ui->fonts->entries[ui->font_id].altas, strv_from_str(&node->button.text.content)) + 30,
 		.y = ui->fonts->entries[ui->font_id].altas.font_height + 15
 	};
 

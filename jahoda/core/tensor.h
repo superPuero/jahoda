@@ -14,7 +14,7 @@ typedef struct
 
 typedef struct
 {
-    arena *mem;
+    arena mem;
     u32 shape[8];
     u8 rank;         
     bool8 zero;
@@ -29,7 +29,7 @@ typedef struct
 
 typedef struct
 {
-    arena *mem;
+    arena mem;
     u32 shape[8];
     u8 rank;
     f64 from;
@@ -46,7 +46,7 @@ tensor_f64 _tensor_f64_make(tensor_config cfg);
 tensor_f64 _tensor_f64_make_rand(tensor_config_rand cfg);
 tensor_f64 _tensor_f64_make_view(tensor_view_config cfg);
 
-tensor_f64 tensor_f64_copy(arena *mem, const tensor_f64 *tensor);
+tensor_f64 tensor_f64_copy(arena mem, const tensor_f64 *tensor);
 
 
 f64 *_tensor_f64_at(tensor_f64 *tensor, tensor_index index);
@@ -59,24 +59,24 @@ bool8 tensor_f64_dot_compatible(const tensor_f64 *t1, const tensor_f64 *t2);
 void tensor_f64_add_inplace(tensor_f64 *dest_tensor, const tensor_f64 *add_tensor);
 
 void tensor_f64_add_scaled_inplace(tensor_f64 *dest_tensor, const tensor_f64 *add_tensor, f64 scalar);
-tensor_f64 tensor_f64_sum_batch_dim(arena *mem, const tensor_f64 *t);
+tensor_f64 tensor_f64_sum_batch_dim(arena mem, const tensor_f64 *t);
 void tensor_f64_sub_inplace(tensor_f64 *dest_tensor, const tensor_f64 *add_tensor);
 void tensor_f64_mul_inplace(tensor_f64 *dest_tensor, const tensor_f64 *add_tensor);
-tensor_f64 tensor_f64_dot(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2);
-tensor_f64 tensor_f64_mm(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2);
-tensor_f64 tensor_f64_mm_2x3(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2);
-tensor_f64 tensor_f64_mm2(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2);
-tensor_f64 tensor_f64_mm3(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2);
+tensor_f64 tensor_f64_dot(arena mem, const tensor_f64 *t1, const tensor_f64 *t2);
+tensor_f64 tensor_f64_mm(arena mem, const tensor_f64 *t1, const tensor_f64 *t2);
+tensor_f64 tensor_f64_mm_2x3(arena mem, const tensor_f64 *t1, const tensor_f64 *t2);
+tensor_f64 tensor_f64_mm2(arena mem, const tensor_f64 *t1, const tensor_f64 *t2);
+tensor_f64 tensor_f64_mm3(arena mem, const tensor_f64 *t1, const tensor_f64 *t2);
 
 void tensor_f64_relu_inplace(tensor_f64 *tensor);
 void tensor_f64_relu_backward_inplace(tensor_f64 *grad, tensor_f64 *activation);
 void tensor_f64_softmax_inplace(tensor_f64 *tensor);
 
 void tensor_f64_transpose_inplace(tensor_f64 *tensor, uz dim1, uz dim2);
-tensor_f64 tensor_f64_transpose(arena *mem, const tensor_f64 *tensor, uz dim1, uz dim2);
+tensor_f64 tensor_f64_transpose(arena mem, const tensor_f64 *tensor, uz dim1, uz dim2);
 
 void tensor_f64_dump_to_file(const tensor_f64 *tensor, FILE *file);
-tensor_f64 tensor_f64_load_from_file(arena *mem, FILE *file);
+tensor_f64 tensor_f64_load_from_file(arena mem, FILE *file);
 
 #define tensor_f64_make(...) _tensor_f64_make((tensor_config){.zero = false, __VA_ARGS__})
 #define tensor_f64_make_view(...) _tensor_f64_make_view((tensor_view_config){__VA_ARGS__})

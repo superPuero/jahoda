@@ -68,7 +68,7 @@ f64 *_tensor_f64_at(tensor_f64 *tensor, tensor_index index)
                             tensor->stride[7] * index.value[7]);
 }
 
-tensor_f64 tensor_f64_copy(arena *mem, const tensor_f64 *tensor)
+tensor_f64 tensor_f64_copy(arena mem, const tensor_f64 *tensor)
 {
     tensor_f64 out = *tensor;
 
@@ -110,7 +110,7 @@ void tensor_f64_transpose_inplace(tensor_f64 *tensor, uz dim1, uz dim2)
     tensor->stride[dim2] = temp_stride;
 }
 
-tensor_f64 tensor_f64_transpose(arena *mem, const tensor_f64 *tensor, uz dim1, uz dim2)
+tensor_f64 tensor_f64_transpose(arena mem, const tensor_f64 *tensor, uz dim1, uz dim2)
 {
     tensor_f64 out = tensor_f64_copy(mem, tensor);
 
@@ -255,7 +255,7 @@ void tensor_f64_add_inplace(tensor_f64 *dest_tensor, const tensor_f64 *add_tenso
     }
 }
 
-tensor_f64 tensor_f64_sum_batch_dim(arena *mem, const tensor_f64 *t)
+tensor_f64 tensor_f64_sum_batch_dim(arena mem, const tensor_f64 *t)
 {
     uz B = t->shape[0];
     uz slice_size = t->size / B;
@@ -309,7 +309,7 @@ void tensor_f64_mul_inplace(tensor_f64 *dest_tensor, const tensor_f64 *add_tenso
     }
 }
 
-tensor_f64 tensor_f64_mm2(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2)
+tensor_f64 tensor_f64_mm2(arena mem, const tensor_f64 *t1, const tensor_f64 *t2)
 {    
     uz t1_rows = t1->shape[t1->rank - 2]; 
     uz t1_columns = t1->shape[t1->rank - 1]; 
@@ -334,12 +334,12 @@ tensor_f64 tensor_f64_mm2(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2
     return out;
 }
 
-tensor_f64 tensor_f64_dot(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2)
+tensor_f64 tensor_f64_dot(arena mem, const tensor_f64 *t1, const tensor_f64 *t2)
 {
     return tensor_f64_mm2(mem, t1, t2);    
 }
 
-tensor_f64 tensor_f64_mm3(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2)
+tensor_f64 tensor_f64_mm3(arena mem, const tensor_f64 *t1, const tensor_f64 *t2)
 {    
     uz batches = t1->shape[t1->rank - 3]; 
     uz t1_rows = t1->shape[t1->rank - 2]; 
@@ -368,7 +368,7 @@ tensor_f64 tensor_f64_mm3(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2
     return out;
 }
 
-tensor_f64 tensor_f64_mm_2x3(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2)
+tensor_f64 tensor_f64_mm_2x3(arena mem, const tensor_f64 *t1, const tensor_f64 *t2)
 {
     uz batches = t2->shape[0];
     uz t1_rows = t1->shape[0];
@@ -396,7 +396,7 @@ tensor_f64 tensor_f64_mm_2x3(arena *mem, const tensor_f64 *t1, const tensor_f64 
     return out;
 }
 
-tensor_f64 tensor_f64_mm(arena *mem, const tensor_f64 *t1, const tensor_f64 *t2)
+tensor_f64 tensor_f64_mm(arena mem, const tensor_f64 *t1, const tensor_f64 *t2)
 {
     if (t1->rank == 2 && t2->rank == 2) 
     {
@@ -424,7 +424,7 @@ void tensor_f64_dump_to_file(const tensor_f64 *tensor, FILE *file)
     fwrite(tensor->data, sizeof(f64), tensor->size, file);
 }
 
-tensor_f64 tensor_f64_load_from_file(arena *mem, FILE *file)
+tensor_f64 tensor_f64_load_from_file(arena mem, FILE *file)
 {
     tensor_f64 out = {0};
     

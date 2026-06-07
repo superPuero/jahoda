@@ -10,7 +10,7 @@ typedef struct
     vec2_i32 extent; 
 } image;
 
-image image_load(arena *pf_arena, arena *storage_arena, strv path);
+image image_load(arena pf_arena, arena storage_arena, strv path);
 void image_release(image *image);
 
 #endif

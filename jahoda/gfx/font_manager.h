@@ -23,7 +23,7 @@ typedef struct
 	font_manager_entry entries[jahoda_max_font_count];
 } font_manager;
 
-font_id font_manager_load(font_manager *manager, gpu_context *gpu, arena *static_arena, arena *scratch_arena, strv font_path);
+font_id font_manager_load(font_manager *manager, gpu_context *gpu, arena static_arena, arena scratch_arena, strv font_path);
 void font_manager_release(font_manager *manager, gpu_context *gpu);
 
 #endif

@@ -17,7 +17,7 @@ typedef struct
 	VkDebugUtilsMessengerEXT debug_messenger;
 } vk_instance;
 
-vk_instance vk_instance_make(arena *temp_arena);
+vk_instance vk_instance_make(arena temp_arena);
 void vk_instance_release(vk_instance *instance);
 
 #endif

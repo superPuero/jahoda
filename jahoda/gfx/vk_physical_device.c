@@ -1,6 +1,6 @@
 #include "vk_physical_device.h"
 
-vk_physical_device vk_physical_device_make(arena *temp_arena, arena *static_arena, vk_instance *instance)
+vk_physical_device vk_physical_device_make(arena temp_arena, arena static_arena, vk_instance *instance)
 {
 	vk_physical_device out = {0};
 

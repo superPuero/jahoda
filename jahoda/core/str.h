@@ -23,21 +23,21 @@ da_declare(const char*, cstr_da);
 
 strv strv_from_str(const str *str);
 
-str str_from_cstr(arena *arena, const char *cstr);
-str str_from_cstr_nt(arena *arena, const char *cstr);
-str str_from_fmt(arena *arena, const char *fmt, ...);
-str str_from_fmtnt(arena *arena, const char *fmt, ...);
-str str_from_fmt_va(arena *arena, const char *fmt, va_list list);
+str str_from_cstr(arena arena, const char *cstr);
+str str_from_cstr_nt(arena arena, const char *cstr);
+str str_from_fmt(arena arena, const char *fmt, ...);
+str str_from_fmtnt(arena arena, const char *fmt, ...);
+str str_from_fmt_va(arena arena, const char *fmt, va_list list);
 
-str str_from_view(arena *arena, strv view);
-str str_from_view_nt(arena *arena, strv view);
+str str_from_view(arena arena, strv view);
+str str_from_view_nt(arena arena, strv view);
 
-str str_clone(arena *arena, const str *clonee);
+str str_clone(arena arena, const str *clonee);
 
-void str_append_char(arena *arena, str *str, char ch);
-void str_append_cstr(arena *arena, str *str, const char *cstr);
-void str_append_str(arena *arena, str *to, str *what);
-void str_append_view(arena *arena, str *str, strv view);
+void str_append_char(arena arena, str *str, char ch);
+void str_append_cstr(arena arena, str *str, const char *cstr);
+void str_append_str(arena arena, str *to, str *what);
+void str_append_view(arena arena, str *str, strv view);
 
 #endif
 

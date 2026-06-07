@@ -14,13 +14,15 @@ gpu_arena gpu_arena_make(vk_device *device, VkDeviceSize capacity, u32 memory_ty
 		.memory_type_index = memory_type_index
 	};
 
+	verify(name.len < sizeof(out.name), "name.len < sizeof(out.name)");
+
 	memcpy(out.name, name.data, name.len);
 
     vk_check(vkAllocateMemory(device->handle, &alloc_info, NULL, &out.mem));
 
 	if(map)
 	{
-		vk_check(vkMapMemory(device->handle, out.mem, 0, out.capacity, 0, &out.mapped_ptr));
+		vk_check(vkMapMemory(device->handle, out.mem, 0, out.capacity, 0, (void*)&out.mapped_ptr));
 	}
 
 	infol(gpu_alloc, "(%.*s) %.2lf Mb", strv_fmt(&name),  capacity / 1024.0 / 1024.0);

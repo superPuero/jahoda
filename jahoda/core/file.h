@@ -4,6 +4,6 @@
 #include "utils.h"
 #include "str.h"
 
-str file_load(arena *arena, strv name);
+str file_load(arena arena, strv name);
 
 #endif

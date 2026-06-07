@@ -25,7 +25,7 @@ typedef struct {
 da_declare(text_vertex, text_vertex_buffer);
 
 f32 font_measure_text_width(font_atlas *font, strv text);   
-font_atlas font_atlas_make(arena *static_arena, arena *temp_arena, strv font_path);
-text_vertex_buffer generate_text_vertices(arena *mem, font_atlas *font, strv text, f32 start_x, f32 start_y);
+font_atlas font_atlas_make(arena static_arena, arena temp_arena, strv font_path);
+text_vertex_buffer generate_text_vertices(arena mem, font_atlas *font, strv text, f32 start_x, f32 start_y);
 
 #endif

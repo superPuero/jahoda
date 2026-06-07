@@ -21,7 +21,7 @@ typedef struct
 	VkSurfaceCapabilitiesKHR capabilities;	
 } vk_surface;
 
-vk_surface vk_surface_make(arena *temp_arena, window *window, vk_instance *instance, vk_physical_device *pdevice);
+vk_surface vk_surface_make(arena temp_arena, window *window, vk_instance *instance, vk_physical_device *pdevice);
 vk_surface vk_surface_refresh_capabilities(vk_surface *surface, vk_physical_device *pdevice);
 void vk_surface_release(vk_instance *instance, vk_surface *surface);
 

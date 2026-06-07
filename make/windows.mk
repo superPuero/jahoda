@@ -13,4 +13,4 @@ clear:
 	del /Q $(TARGET).exe *.pdb
 
 clear_shaders: 
-	del /S /Q shaders\*.spv
+	del /S /Q *.spv

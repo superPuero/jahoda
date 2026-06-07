@@ -23,7 +23,7 @@ typedef struct
 
 }vk_device;
 
-vk_device vk_device_make(arena *temp_memory, vk_physical_device *pdevice, vk_surface *surface);
+vk_device vk_device_make(arena temp_memory, vk_physical_device *pdevice, vk_surface *surface);
 void vk_device_release(vk_device *device);
 
 #endif

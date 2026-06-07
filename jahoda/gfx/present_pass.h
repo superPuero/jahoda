@@ -5,7 +5,7 @@
 
 typedef struct
 {
-	arena *pf_arena;
+	arena pf_arena;
 
 	VkPipelineLayout pipeline_layout;
 	VkPipeline pipeline;
@@ -19,7 +19,7 @@ typedef struct
 	VkRenderPass render_pass;
 } present_pass;
 
-present_pass present_pass_make(arena *pf_arena, gpu_context *gpu, VkImageView input_views[jahoda_vk_frames_in_flight]);
+present_pass present_pass_make(arena pf_arena, gpu_context *gpu, VkImageView input_views[jahoda_vk_frames_in_flight]);
 void present_pass_release(gpu_context *gpu, present_pass *pass);
 
 void present_pass_record(gpu_context *gpu, present_pass *pass,  VkImageView input_views[jahoda_vk_frames_in_flight], VkCommandBuffer cmd);

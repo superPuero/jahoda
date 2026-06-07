@@ -10,4 +10,4 @@ clear:
 	rm -f $(TARGET)
 
 clear_shaders: 
-	rm -f shaders/*.spv
+	rm -f *.spv
