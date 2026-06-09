@@ -252,7 +252,9 @@ bool gpu_context_try_begin_frame(gpu_context *gpu, window *win)
 	if (res == VK_SUBOPTIMAL_KHR)
 	{
 		gpu->swapchain_needs_refresh = true;
-		return false;
+
+		// @explain: this line right here is evil, works on some hardware, but crashes on other
+		// return false;
 	}
 	else if (res == VK_ERROR_OUT_OF_DATE_KHR)
     {

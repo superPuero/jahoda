@@ -62,21 +62,20 @@ do\
 #define infol(label, ...)\
 do\
 {\
-	print_colored_if_isatty(ansi_text_color_green, #label ": ");\
+	print_colored_if_isatty(ansi_text_color_green, "info" " (" #label ") " "[" __DATE__ " " __TIME__ "]" ": ");\
 	fprintf(stdout, "" __VA_ARGS__);\
 	fprintf(stdout, "\n");\
 }while(0)
-#define info(...) infol(info, "" __VA_ARGS__)
+#define info(...) infol(-, "" __VA_ARGS__)
 #else
 #define infol(label, ...)
 #define info(...)
 #endif
 
-
 #define warnl(label, ...)\
 do\
 {\
-	print_colored_if_isatty(ansi_text_color_yellow, #label ": ");\
+	print_colored_if_isatty(ansi_text_color_yellow, "warn"  " (" #label ") "  "[" __DATE__ " " __TIME__ "]" ": ");\
 	fprintf(stdout, "" __VA_ARGS__);\
 	fprintf(stdout, "\n");\
 }while(0)
@@ -86,7 +85,7 @@ do\
 #define errl(label, ...)\
 do\
 {\
-	print_colored_if_isatty(ansi_text_color_red, #label ": ");\
+	print_colored_if_isatty(ansi_text_color_red, "err" " (" #label ") " "[" __DATE__ " " __TIME__ "]" ": ");\
 	fprintf(stdout, "" __VA_ARGS__);\
 	fprintf(stdout, "\n");\
 	trap();\
@@ -99,24 +98,17 @@ do\
 {\
 	if(!(expr))\
 	{\
-		errl(label, __VA_ARGS__);\
+		errl(label {expr}, __VA_ARGS__);\
 	}\
 }while(0)
 
-#define verify(expr, ...) verifyl(verify_fail, expr, __VA_ARGS__)
+#define verify(expr, ...) verifyl(verify, expr, __VA_ARGS__)
 
 #ifdef jahoda_debug
 #define dbg(...) __VA_ARGS__
-#define dbg_verifyl(label, expr, ...)\
-do\
-{\
-	if(!(expr))\
-	{\
-		errl(label, __VA_ARGS__);\
-	}\
-}while(0)
+#define dbg_verifyl(label, expr, ...) dbg(verifyl(label, expr, __VA_ARGS__))
 
-#define dbg_verify(expr, ...) dbg_verifyl(dbg_verify_fail, expr, __VA_ARGS__)
+#define dbg_verify(expr, ...) dbg_verifyl(dbg_verify, expr, __VA_ARGS__)
 
 #else 
 #define dbg(...)
@@ -133,7 +125,7 @@ do\
 #if defined(__GNUC__) || defined(__clang__)
     #define jahoda_typeof(expr) __typeof__(expr)
 #else
-    #error "typeof is not supported on this compiler in pure C mode"
+    #error "typeof is not supported on this compiler"
 #endif
 
 #define expand(x) x 
