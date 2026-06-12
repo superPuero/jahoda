@@ -130,10 +130,10 @@ vk_device vk_device_make(arena temp_arena, vk_physical_device *pdevice, vk_surfa
 	dbg_verify(out.queue_compute_index != jahoda_vk_invalid_queue_family, "");
 	dbg_verify(out.queue_present_index != jahoda_vk_invalid_queue_family, "");
 
-	info("out.queue_graphics_index: %u", out.queue_graphics_index);
-	info("out.queue_transfer_index: %u", out.queue_transfer_index);
-	info("out.queue_compute_index: %u", out.queue_compute_index);
-	info("out.queue_present_index: %u", out.queue_present_index);
+	infol(vulkan_device, "out.queue_graphics_index: %u", out.queue_graphics_index);
+	infol(vulkan_device, "out.queue_transfer_index: %u", out.queue_transfer_index);
+	infol(vulkan_device, "out.queue_compute_index: %u", out.queue_compute_index);
+	infol(vulkan_device, "out.queue_present_index: %u", out.queue_present_index);
 
 	f32 queue_priority = 1.0f;
 	vk_device_queue_ci_da queue_ci_da = {0};

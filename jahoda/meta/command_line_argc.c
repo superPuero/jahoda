@@ -29,9 +29,9 @@ static f64 f64_parse(char *str)
     return val;
 }
 
-static strv strv_parse(char *str)
+static const_cstr const_cstr_parse(char *str)
 {    
-    return (strv){.data = str, .len = strlen(str)};
+    return str;
 }
 
 command_line_args command_line_args_parse(int argc, char **argv)

@@ -7,7 +7,6 @@
 typedef vec2_f32 position;
 typedef vec2_f32 velocity;
 
-// @impl_point
 #define component_list\
 	X(position)\
 	X(velocity)
