@@ -67,8 +67,6 @@ typedef struct
 } galaxy_nn_model;
 
 
-
-
 f64 softmax(galaxy_dataset *df, galaxy_nn_model *model, celestial_type type, uz entry);
 galaxy_dataset galaxy_dataset_from_csv(arena *static_arena, arena *temp_arena, strv csv_path);
 void galaxy_nn_train_round(galaxy_dataset *df, galaxy_nn_model *model);

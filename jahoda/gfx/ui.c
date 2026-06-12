@@ -556,16 +556,14 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
 
 	u32 curr_offset = 0;
 
-    da_foreach(&ui->nodes)
+    for da_each(&ui->nodes, it)
 	{
-		ui_node *it = ui->nodes.it;
-
-		marker mark = arena_mark(ui->pf_arena);
+		scratch mark = scratch_begin(ui->pf_arena);
 		
-		if(ui->nodes.it->type == ui_node_type_text)
+		if(it->type == ui_node_type_text)
 		{			
 			push_constants ps = {
-				.text_color = ui->nodes.it->text.color,
+				.text_color = it->text.color,
 				.projection = mat4_f32_ortho(
 					.left = 0, 
 					.right= gpu->swapchain.extent.width, 
@@ -593,9 +591,9 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
 			text_vertex_buffer verts = generate_text_vertices(
 				ui->pf_arena, 
 				&ui->fonts->entries[ui->font_id].altas, 
-				strv_from_str(&ui->nodes.it->text.content), 
-				ui->nodes.it->position.x, 
-				ui->nodes.it->position.y
+				strv_from_str(&it->text.content), 
+				it->position.x, 
+				it->position.y
 			);
 		
 			size_t copy_size = verts.occupied  *sizeof(text_vertex);
@@ -606,7 +604,7 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
 			curr_offset += verts.occupied;
 		}
 
-		if(ui->nodes.it->type == ui_node_type_button)
+		if(it->type == ui_node_type_button)
 		{		
 			push_constants ps= {
 				.text_color = it->button.color,
@@ -654,7 +652,7 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
 			curr_offset += 6;
 
 			push_constants ps2 = {
-				.text_color = ui->nodes.it->button.text.color,
+				.text_color = it->button.text.color,
 				.projection = mat4_f32_ortho(
 					.left = 0, 
 					.right= gpu->swapchain.extent.width, 
@@ -682,9 +680,9 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
 			text_vertex_buffer verts = generate_text_vertices(
 				ui->pf_arena, 
 				&ui->fonts->entries[ui->font_id].altas, 
-				strv_from_str(&ui->nodes.it->text.content), 
-				ui->nodes.it->position.x + 15, 
-				ui->nodes.it->position.y - 30
+				strv_from_str(&it->text.content), 
+				it->position.x + 15, 
+				it->position.y - 30
 			);
 		
 			size_t copy_size = verts.occupied  *sizeof(text_vertex);
@@ -695,7 +693,7 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
 			curr_offset += verts.occupied;
 		}
 
-		arena_pop_to_marker(mark);
+		scratch_end(mark);
 	}
 
 

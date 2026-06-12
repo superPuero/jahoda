@@ -37,15 +37,15 @@ void arena_release(arena arena)
 	free(arena);
 }
 
-marker arena_mark(arena arena)
+scratch scratch_begin(arena arena)
 {
-	return (marker){ .arena = arena, .point = as_arena_content(arena)->current };
+	return (scratch){ .arena = arena, .point = as_arena_content(arena)->current };
 }
 
-void arena_pop_to_marker(marker marker)
+void scratch_end(scratch scratch)
 {
-	assert(as_arena_content(marker.arena)->current >= marker.point);
-	as_arena_content(marker.arena)->current = marker.point;	
+	assert(as_arena_content(scratch.arena)->current >= scratch.point);
+	as_arena_content(scratch.arena)->current = scratch.point;	
 }
 
 void *arena_push_unzeroed(arena arr, uz size, uz alignment)

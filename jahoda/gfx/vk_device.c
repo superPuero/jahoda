@@ -9,13 +9,13 @@ void validate_device_extensions(arena temp_arena, vk_physical_device *pdevice, c
 	da_resize(temp_arena, &avalible_device_extensions, device_extension_count);
 	vkEnumerateDeviceExtensionProperties(pdevice->handle, NULL, &device_extension_count, avalible_device_extensions.data);
 
-	da_foreach(device_extensions)
+	for da_each(device_extensions, device_extensions_it)
 	{
 		
 		bool8 found = false;
-		da_foreach(&avalible_device_extensions)
+		for da_each(&avalible_device_extensions, avalible_device_extensions_id)
 		{
-			if (strcmp(*device_extensions->it, avalible_device_extensions.it->extensionName) == 0)
+			if (strcmp(*device_extensions_it, avalible_device_extensions_id->extensionName) == 0)
 			{
 				found = true;
 				break;
@@ -24,7 +24,7 @@ void validate_device_extensions(arena temp_arena, vk_physical_device *pdevice, c
 
 		if (!found)
 		{
-			err("required device extension '%s' is not supported", *device_extensions->it);
+			err("required device extension '%s' is not supported", *device_extensions_it);
 		}
 	}	
 }
@@ -142,9 +142,9 @@ vk_device vk_device_make(arena temp_arena, vk_physical_device *pdevice, vk_surfa
 
 	{
 		bool8 graphics_index_present = false;
-		da_foreach(&unique_queues)
+		for da_each(&unique_queues, it)
 		{
-			if(*unique_queues.it == out.queue_graphics_index)
+			if(*it == out.queue_graphics_index)
 			{
 				graphics_index_present = true;
 				break;
@@ -158,9 +158,9 @@ vk_device vk_device_make(arena temp_arena, vk_physical_device *pdevice, vk_surfa
 
 	{
 		bool8 transfer_index_present = false;
-		da_foreach(&unique_queues)
+		for da_each(&unique_queues, it)
 		{
-			if(*unique_queues.it == out.queue_transfer_index)
+			if(*it == out.queue_transfer_index)
 			{
 				transfer_index_present = true;
 				break;
@@ -174,9 +174,9 @@ vk_device vk_device_make(arena temp_arena, vk_physical_device *pdevice, vk_surfa
 
 	{
 		bool8 compute_index_present = false;
-		da_foreach(&unique_queues)
+		for da_each(&unique_queues, it)
 		{
-			if(*unique_queues.it == out.queue_compute_index)
+			if(*it == out.queue_compute_index)
 			{
 				compute_index_present = true;
 				break;
@@ -190,9 +190,9 @@ vk_device vk_device_make(arena temp_arena, vk_physical_device *pdevice, vk_surfa
 
 	{
 		bool8 present_index_present = false;
-		da_foreach(&unique_queues)
+		for da_each(&unique_queues, it)
 		{
-			if(*unique_queues.it == out.queue_present_index)
+			if(*it == out.queue_present_index)
 			{
 				present_index_present = true;
 				break;
@@ -204,12 +204,12 @@ vk_device vk_device_make(arena temp_arena, vk_physical_device *pdevice, vk_surfa
 		}
 	}
 	
-	da_foreach(&unique_queues)
+	for da_each(&unique_queues, it)
 	{
 		VkDeviceQueueCreateInfo ci = 
 			{
 				.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-				.queueFamilyIndex = *unique_queues.it,
+				.queueFamilyIndex = *it,
 				.queueCount = 1,
 				.pQueuePriorities = &queue_priority
 			};

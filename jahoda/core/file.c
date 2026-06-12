@@ -5,12 +5,12 @@ str file_load(arena arena, strv filename)
 	str out = {0};
 	FILE *cfile = NULL;
 
-	marker marker = arena_mark(arena);
+	scratch scratch = scratch_begin(arena);
 
 	str filename_nt = str_from_view_nt(arena, filename);		
 	cfile = fopen(filename_nt.data, "rb");	
 
-	arena_pop_to_marker(marker);
+	scratch_end(scratch);
 
 	if (!cfile)
 	{

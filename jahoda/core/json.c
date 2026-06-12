@@ -50,20 +50,19 @@ json json_from_strv(arena static_mem, arena temp_mem, strv view)
     
     json_parser parser = { .static_mem = static_mem, .temp_mem = temp_mem, .view = view };
 
-
-    marker static_marker = arena_mark(parser.static_mem);
-    marker temp_marker = arena_mark(parser.temp_mem);
+    scratch static_scratch = scratch_begin(parser.static_mem);
+    scratch temp_scratch = scratch_begin(parser.temp_mem);
     
     json_parse(&out, &parser);
     
     if(parser.err.happened)
     {
         dbg(warnl(json_parse, "%.*s at char %u, at %s, on line %u", str_fmt(&parser.err.what), parser.err.where, parser.err.func, parser.err.line));
-        arena_pop_to_marker(static_marker);
+        scratch_end(static_scratch);
         out.type = json_type_none;
     }
     
-    arena_pop_to_marker(temp_marker);
+    scratch_end(temp_scratch);
     
     return out;
 }
@@ -200,7 +199,7 @@ void json_parse_number(json *out, json_parser *parser)
         c = current(parser);
     }
 
-    // @mem: add marker    
+    // @mem: add scratch    
     str number_str = str_from_view_nt(parser->temp_mem, (strv){.data = parser->view.data + start, .len = parser->current - start});
 
     if(dot_found)
@@ -229,29 +228,29 @@ void json_dump(json *j)
     {
          case json_type_array:        
             fprintf(stdout, "[ ");
-            da_foreach(&j->content.array)
+            for da_each(&j->content.array, it)
             {
-                if(j->content.array.it != j->content.array.data)
+                if(it != j->content.array.data)
                 {
                     fprintf(stdout, ", ");
                 }
 
-                json_dump(j->content.array.it);
+                json_dump(it);
             }
             fprintf(stdout, " ]");
             break;
         case json_type_object:        
             fprintf(stdout, "{ ");
-            da_foreach(&j->content.object.members)
+            for da_each(&j->content.object.members, it)
             {
-                if(j->content.object.members.it != j->content.object.members.data)
+                if(it != j->content.object.members.data)
                 {
                     fprintf(stdout, ", ");
                 }
 
-                json_dump(&j->content.object.members.it->name);
+                json_dump(&it->name);
                 fprintf(stdout, ": ");
-                json_dump(&j->content.object.members.it->value);
+                json_dump(&it->value);
             }
             fprintf(stdout, " }");
             break;

@@ -24,19 +24,17 @@ typedef u8* arena;
 	// char name[arena_name_max_len];
 // } arena;
 
-typedef struct uz arena_marker;
-
 typedef struct
 {
 	arena arena;
 	uz point;
-} marker;
+} scratch;
 
 #define arena_ppush(arena, type) arena_push(arena, sizeof(type), jahoda_alignof(type), true)
 
 #define arena_scope(arena, scope_name)\
-marker scope_name##marker = arena_mark(arena);\
-for(i32 _i = 0; _i < 1; arena_pop_to_marker(scope_name##marker), ++_i)
+scratch scope_name##scratch = scratch_begin(arena);\
+for(i32 _i = 0; _i < 1; scratch_end(scope_name##scratch), ++_i)
 
 typedef struct
 {
@@ -50,10 +48,9 @@ arena arena_make_(arena_params params);
 uz arena_current(arena arena);
 void arena_reset(arena arena);
 void arena_release(arena arena);
-marker arena_mark(arena arena); 
-void arena_pop_to_marker(marker); 
+scratch scratch_begin(arena arena); 
+void scratch_end(scratch); 
 bool8 arena_is_at(arena arena, void *ptr);
-
 
 void *arena_push(arena arena, uz size, uz alignment, bool8 zero);
 

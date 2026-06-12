@@ -72,10 +72,8 @@ do{\
 
 #define da_last(arr) ((arr)->data + (arr)->occupied - 1)
 
-#define da_foreach(da)\
-for(uz _i = ((da)->it = NULL, 0); _i < (da)->occupied && ((da)->it = (da)->data + _i, 1); ++_i)
+#define da_each(da, itname)\
+(jahoda_typeof((da)->data) itname = (da)->data; itname < (da)->data + (da)->occupied; itname++)
 
-#define da_foreach_named(da, _it)\
-for(uz _it = ((da)->it = NULL, 0); _it < (da)->occupied && ((da)->it = (da)->data + _it, 1); ++_it)
 
 #endif
