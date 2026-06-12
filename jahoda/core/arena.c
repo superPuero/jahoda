@@ -27,6 +27,11 @@ arena arena_make_(arena_params params)
 	return (arena)out;
 }
 
+bool8 arena_is_at(arena arena, void *ptr)
+{
+	return (void*)(as_arena_content(arena)->mem + as_arena_content(arena)->current) == ptr;
+}
+
 void arena_release(arena arena)
 {
 	free(arena);

@@ -52,6 +52,7 @@ void arena_reset(arena arena);
 void arena_release(arena arena);
 marker arena_mark(arena arena); 
 void arena_pop_to_marker(marker); 
+bool8 arena_is_at(arena arena, void *ptr);
 
 
 void *arena_push(arena arena, uz size, uz alignment, bool8 zero);

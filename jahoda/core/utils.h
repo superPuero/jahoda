@@ -80,7 +80,7 @@ do\
 	fprintf(stdout, "\n");\
 }while(0)
 
-#define warn(...) warnl(warn, __VA_ARGS__);
+#define warn(...) warnl(-, __VA_ARGS__);
 
 #define errl(label, ...)\
 do\
@@ -91,7 +91,7 @@ do\
 	trap();\
 }while(0)
 
-#define err(...) errl(err, __VA_ARGS__)
+#define err(...) errl(-, "" __VA_ARGS__)
 
 #define verifyl(label, expr, ...)\
 do\
@@ -108,7 +108,7 @@ do\
 #define dbg(...) __VA_ARGS__
 #define dbg_verifyl(label, expr, ...) dbg(verifyl(label, expr, __VA_ARGS__))
 
-#define dbg_verify(expr, ...) dbg_verifyl(dbg_verify, expr, __VA_ARGS__)
+#define dbg_verify(expr, ...) dbg_verifyl(-, expr, __VA_ARGS__)
 
 #else 
 #define dbg(...)
