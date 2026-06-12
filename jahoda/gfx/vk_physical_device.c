@@ -24,10 +24,10 @@ vk_physical_device vk_physical_device_make(arena temp_arena, arena static_arena,
 	da_append(temp_arena, &candidates, VK_FORMAT_D32_SFLOAT_S8_UINT);
 	da_append(temp_arena, &candidates, VK_FORMAT_D24_UNORM_S8_UINT);
 
-	da_foreach(&candidates)
+	for da_each(&candidates, it)
 	{
 		VkFormatProperties props;
-		VkFormat format = *candidates.it;
+		VkFormat format = *it;
 		vkGetPhysicalDeviceFormatProperties(out.handle, format, &props);
 
 		if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)

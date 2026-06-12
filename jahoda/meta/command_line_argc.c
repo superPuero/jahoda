@@ -1,4 +1,4 @@
-    #include "command_line_args.h"	
+#include "command_line_args.h"	
 #include <errno.h>
 
 static u32 u32_parse(char *str)
@@ -29,6 +29,10 @@ static f64 f64_parse(char *str)
     return val;
 }
 
+static strv strv_parse(char *str)
+{    
+    return (strv){.data = str, .len = strlen(str)};
+}
 
 command_line_args command_line_args_parse(int argc, char **argv)
 {

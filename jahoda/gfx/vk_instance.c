@@ -45,12 +45,12 @@ void validate_required_layers(arena temp_arena, cstr_da *required_layers)
 	vkEnumerateInstanceLayerProperties(&property_count, available_properties.data);
 	available_properties.occupied = property_count;
 	
-	da_foreach(required_layers)
+	for da_each(required_layers, required_layers_it)
 	{
 		bool8 present = false;
-		da_foreach(&available_properties)	
+		for da_each(&available_properties, available_properties_it)	
 		{
-			if (strcmp(*required_layers->it, available_properties.it->layerName) == 0)
+			if (strcmp(*required_layers_it, available_properties_it->layerName) == 0)
 			{
 				present = true;
 				break;
@@ -75,19 +75,19 @@ void validate_required_extensions(arena temp_arena, cstr_da *required_extension)
 	vkEnumerateInstanceExtensionProperties(NULL, &extension_count, available_properties.data);
 	available_properties.occupied = extension_count;
 	
-	da_foreach(required_extension)
+	for da_each(required_extension, required_extension_it)
 	{
 		bool8 present = false;
-		da_foreach(&available_properties)	
+		for da_each(&available_properties, available_properties_it)	
 		{
-			if (strcmp(*required_extension->it, available_properties.it->extensionName) == 0)
+			if (strcmp(*required_extension_it, available_properties_it->extensionName) == 0)
 			{
 				present = true;
 				break;
 			}
 		}
 
-		dbg_verify(present, "required extension %s is not found", *required_extension->it);
+		dbg_verify(present, "required extension %s is not found", *required_extension_it);
 	}
 }
 

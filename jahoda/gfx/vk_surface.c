@@ -21,9 +21,9 @@ vk_surface vk_surface_make(arena temp_arena, window *window, vk_instance *instan
 
 	out.surface_format = avalible_surafce_formats.data[0];
 
-	da_foreach(&avalible_surafce_formats)
+	for da_each(&avalible_surafce_formats, it)
 	{
-		VkSurfaceFormatKHR format = *avalible_surafce_formats.it;
+		VkSurfaceFormatKHR format = *it;
 		if (format.format == VK_FORMAT_B8G8R8A8_UNORM &&
 			format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
@@ -38,9 +38,9 @@ vk_surface vk_surface_make(arena temp_arena, window *window, vk_instance *instan
 	da_resize(temp_arena, &avalible_present_modes, present_mode_count);
 	vkGetPhysicalDeviceSurfacePresentModesKHR(pdevice->handle, out.handle, &present_mode_count, avalible_present_modes.data);
 
-	da_foreach(&avalible_present_modes)
+	for da_each(&avalible_present_modes, it)
 	{
-		VkPresentModeKHR mode = *avalible_present_modes.it;
+		VkPresentModeKHR mode = *it;
 
 		if (mode == jahoda_vk_present_mode)
 		{
