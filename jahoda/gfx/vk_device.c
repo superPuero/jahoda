@@ -94,7 +94,7 @@ vk_device vk_device_make(arena temp_arena, vk_physical_device *pdevice, vk_surfa
 
 	if (out.queue_compute_index == jahoda_vk_invalid_queue_family)
 	{
-		info("wasnt able to find dedicated compute queue");
+		infol(vulkan_device, "wasnt able to find dedicated compute queue");
 
 		for (uz i = 0; i < queue_families.occupied; i++)
 		{
