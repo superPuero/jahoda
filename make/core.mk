@@ -23,7 +23,7 @@ BUILD_DIR = build
 TARGET = jahoda
 
 INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include" -I"vendors/glfw/include" -I"vendors/stb_truetype" -I"vendors/stb_image" -I.
-LIB_DIRECTORIES = -Lpthreads
+LIB_DIRECTORIES = -lpthread
 LIB_FLAGS =
 
 CC_FLAGS = -std=c99 -Wall -Wextra $(INCLUDE_DIRECTORIES)
@@ -34,7 +34,7 @@ include make/$(PLATFORM).mk
 include jahoda/jahoda.mk
 include vendors/vendors.mk
 
-OBJS = $(SRCS:.c=.o)
+OBJS += $(SRCS:.c=.o)
 
 basic_build: $(OBJS)
 	$(CC) $(OBJS) $(CC_FLAGS) -o $(TARGET) $(LIB_DIRECTORIES) $(LIB_FLAGS)
