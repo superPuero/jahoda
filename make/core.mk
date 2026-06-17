@@ -11,6 +11,7 @@ else
 endif
 
 $(building for platform: $(PLATFORM))
+$(error STOP! The platform evaluated as: [$(PLATFORM)])
 
 ifndef VULKAN_SDK
 	$(error VULKAN_SDK is not detected)
@@ -23,7 +24,7 @@ BUILD_DIR = build
 TARGET = jahoda
 
 INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include" -I"vendors/glfw/include" -I"vendors/stb_truetype" -I"vendors/stb_image" -I.
-LIB_DIRECTORIES = -Lpthreads -lws2_32
+LIB_DIRECTORIES = -Lpthreads
 LIB_FLAGS =
 
 CC_FLAGS = -std=c99 -Wall -Wextra $(INCLUDE_DIRECTORIES)
