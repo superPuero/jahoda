@@ -2,7 +2,7 @@ SRCS += draft/main.c
 
 include make/core.mk
 
-TARGET = draft
+TARGET = draft_app
 
 debug: CC_FLAGS += $(CC_DEBUG_FLAGS)
 debug: basic_build
