@@ -79,7 +79,7 @@ da_declare(uz, entity_free_list);
 
 struct entity_manager_s
 {	
-	arena memory;
+	arena *memory;
 	entity_da entities;
 	entity_free_list free_list;
 };
@@ -87,7 +87,7 @@ struct entity_manager_s
 typedef struct
 {
 	uz capacity;
-	arena memory;
+	arena *memory;
 } entity_manager_params;
 
 #define entity_manager_make(...) entity_manager_make_((entity_manager_params){__VA_ARGS__}); 

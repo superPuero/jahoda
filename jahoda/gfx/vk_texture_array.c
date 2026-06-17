@@ -1,6 +1,6 @@
 // #include "vk_texture_array.h"
 
-// vk_texture_array texture_array_create(gpu_context *gpu,  arena *st_arena,  u32 dl_memory_size, u32 max_entries)
+// vk_texture_array texture_array_create(gpu_context *gpu,  arena **st_arena,  u32 dl_memory_size, u32 max_entries)
 // {
 //     vk_texture_array out = {0};
 

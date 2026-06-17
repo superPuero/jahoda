@@ -1,6 +1,6 @@
 #include "vk_shader.h"
 
-shader_bytes shader_bytes_from_file(arena scratch_arena, strv path)
+shader_bytes shader_bytes_from_file(arena *scratch_arena, strv path)
 {
 	str data = file_load(scratch_arena, path);
 	verify((data.occupied % 4) == 0, ".spv content len must be divisible by 4");

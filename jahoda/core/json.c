@@ -44,7 +44,7 @@ void json_parser_expect(json_parser *parser, char ch)
     }
 }
 
-json json_from_strv(arena static_mem, arena temp_mem, strv view)
+json json_from_strv(arena *static_mem, arena *temp_mem, strv view)
 { 
     json out = {0};
     

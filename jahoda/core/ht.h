@@ -15,9 +15,7 @@ da_declare(u64, ht_key_da);
 typedef struct\
 {\
 	data_type values[(1 << size_power_of_two)];\
-	data_type *value_it;\
 	u64 keys[(1 << size_power_of_two)];\
-	u64 *key_it;\
 	u64 occupied;\
 } ht_name;
 
@@ -61,8 +59,5 @@ do\
 		index = (index + 1) & (sht_cap(table) - 1);\
 	}\
 }while(0)
-
-#define sht_foreach(ht)\
-for(uz _i = ((ht)->value_it = NULL, (ht)->key_it = NULL, 0); _i < sht_cap(ht) && ((ht)->value_it = (ht)->values + _i, (ht)->key_it = (ht)->keys + _i, 1); ++_i)
 
 #endif

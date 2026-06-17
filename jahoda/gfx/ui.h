@@ -63,7 +63,7 @@ typedef struct
 	ui_node_state state;
 } ui_node;
 
-// @explain: (1 << 12)  *ht_max_occupancy = 4096  *0.75 = 3072, this is hard limit for ammount of nodes
+// @explain: (1 << 12)  *ht_max_occupancy = 4096  *0.75 = 3072, this is hard limit for amount of nodes
 // s_ht_declare(jui_node, 12, jui_node_table);
 
 typedef struct
@@ -85,7 +85,7 @@ typedef struct
 
 typedef struct
 {
-	arena pf_arena;
+	arena *pf_arena;
 
 	VkShaderModule vertex_shader;
 	VkShaderModule fragment_shader;
@@ -119,7 +119,7 @@ void ui_end(ui *ui);
 void ui_text(ui *ctx, vec3_f32 color, vec2_f64 position, const u8 *fmt, ...);
 bool8 ui_button(ui *ctx, vec3_f32 color, vec3_f32 text_color, vec2_f64 position, const u8 *fmt, ...);
 
-ui ui_make(arena pf_arena, gpu_context *gpu, font_manager *fonts, font_id font_id);
+ui ui_make(arena *pf_arena, gpu_context *gpu, font_manager *fonts, font_id font_id);
 void ui_release(ui *ctx, gpu_context *gpu);
 void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd);
 

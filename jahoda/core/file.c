@@ -1,6 +1,6 @@
 #include "file.h"
 
-str file_load(arena arena, strv filename)
+str file_load(arena *arena, strv filename)
 {
 	str out = {0};
 	FILE *cfile = NULL;

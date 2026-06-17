@@ -8,13 +8,33 @@
 #include "platform_detect.h"
 #include "types.h"
 
+#define Kb(expr) ((expr) * 1024ULL)
+#define Mb(expr) (Kb(expr) * 1024ULL)
+#define Gb(expr) (Mb(expr) * 1024ULL)
+#define Tb(expr) (Gb(expr) * 1024ULL)
+
+#define as_Kb(expr) ((expr) / 1024.0)
+#define as_Mb(expr) (as_Kb(expr) / 1024.0)
+#define as_Gb(expr) (as_Mb(expr) / 1024.0)
+#define as_Tb(expr) (as_Gb(expr) / 1024.0)
+
+
+#define bit(x) (1ull << x)
+
 #ifndef NDEBUG
 #define jahoda_debug
 #endif
 
-#define each_index(index_var_name, count)\
-(uz index_var_name = 0; index_var_name < count; index_var_name++)
+#define concat_helper(x, y) x##y
+#define concat(x, y) concat_helper(x, y)
 
+
+#define each_index_range(index_var_name, from, to)\
+(uz index_var_name = from; index_var_name < to; index_var_name++)
+
+#define each_index(index_var_name, count) each_index_range(index_var_name, 0, count)
+
+#define unique_symbol(...) __VA_ARGS__##__COUNTER__	
 
 #define static_assert(expr) typedef int static_assert_##__COUNTER__[(expr) ? 1 : -1]
 
@@ -144,6 +164,17 @@ return #value
 
 typedef struct
 {
+	u8 *data;
+	uz len;
+} memv;
+
+#define memv_from(obj) (memv){.data = (u8*)(obj), .len = sizeof(*(obj))}
+#define memv_fmt(mem) (i32)(mem)->len, (mem)->data
+#define memv_dump_hex(mem) printf("{ "); for each_index(i, (mem)->len) { printf("%x ", (mem)->data[i]); } printf("}\n");
+#define memv_as(mem, type) ((type*)((mem)->data))
+
+typedef struct
+{
 	const char *data;
 	uz len;
 } strv;
@@ -151,8 +182,6 @@ typedef struct
 strv strv_make(const char *data, uz len);
 strv strv_from_cstr(const char *data);
 
-// @thoughs: why %.*s fmt takes signed integer?
-// printing 2 gigabytes of data at once is not something that is reasonable anyways 
 #define strv_fmt(view) (i32)(view)->len, (view)->data
 
 

@@ -35,7 +35,7 @@ void mat_f64_dump(const mat_f64 *mat)
     }
 }
 
-mat_f64 mat_f64_make(arena mem, uz rows, uz columns, bool8 zero)
+mat_f64 mat_f64_make(arena *mem, uz rows, uz columns, bool8 zero)
 {    
     return (mat_f64){
         .data = arena_push(mem, rows * columns * sizeof(f64), jahoda_alignof(f64), zero), 
@@ -53,7 +53,7 @@ mat_f64 mat_f64_make_view(mat_f64 *mat, uz rows, uz columns, uz off_rows, uz off
     }; 
 }
 
-mat_f64 mat_f64_make_rand(arena mem, uz rows, uz columns, f64 from, f64 to)
+mat_f64 mat_f64_make_rand(arena *mem, uz rows, uz columns, f64 from, f64 to)
 {
     mat_f64 out = mat_f64_make(mem, rows, columns, false);
 
@@ -68,7 +68,7 @@ mat_f64 mat_f64_make_rand(arena mem, uz rows, uz columns, f64 from, f64 to)
     return out;
 }
 
-mat_f64 mat_f64_make_identity(arena mem, uz extent)
+mat_f64 mat_f64_make_identity(arena *mem, uz extent)
 {
     mat_f64 out = mat_f64_make(mem, extent, extent, true);
 
@@ -81,7 +81,7 @@ mat_f64 mat_f64_make_identity(arena mem, uz extent)
 
 }
 
-mat_f64 mat_f64_copy(arena mem, const mat_f64 *mat)
+mat_f64 mat_f64_copy(arena *mem, const mat_f64 *mat)
 {    
     mat_f64 out = mat_f64_make(mem, mat->rows, mat->columns, false);
 
@@ -90,7 +90,7 @@ mat_f64 mat_f64_copy(arena mem, const mat_f64 *mat)
     return out;
 }
 
-mat_f64 mat_f64_transpose(arena mem, const mat_f64 *mat)
+mat_f64 mat_f64_transpose(arena *mem, const mat_f64 *mat)
 {
     mat_f64 out = mat_f64_make(mem, mat->columns, mat->rows, false);
     
@@ -105,7 +105,7 @@ mat_f64 mat_f64_transpose(arena mem, const mat_f64 *mat)
     return out;
 }
 
-mat_f64 mat_f64_add(arena mem, const mat_f64 *mat1, const mat_f64 *mat2)
+mat_f64 mat_f64_add(arena *mem, const mat_f64 *mat1, const mat_f64 *mat2)
 {
     dbg_verify(mat_f64_comatible(mat1, mat2), "matricies are uncompatible for addition");
 
@@ -135,7 +135,7 @@ void mat_f64_add_scaled_inplace(mat_f64 *mat1, const mat_f64 *mat2, f64 scalar)
     }
 }
 
-mat_f64 mat_f64_add_scaled(arena mem, const mat_f64 *mat1, const mat_f64 *mat2, f64 scalar)
+mat_f64 mat_f64_add_scaled(arena *mem, const mat_f64 *mat1, const mat_f64 *mat2, f64 scalar)
 {
     dbg_verify(mat_f64_comatible(mat1, mat2), "matricies are uncompatible for addition");
 
@@ -152,7 +152,7 @@ mat_f64 mat_f64_add_scaled(arena mem, const mat_f64 *mat1, const mat_f64 *mat2, 
     return out;
 }
 
-mat_f64 mat_f64_sub(arena mem, const mat_f64 *mat1, const mat_f64 *mat2)
+mat_f64 mat_f64_sub(arena *mem, const mat_f64 *mat1, const mat_f64 *mat2)
 {
     dbg_verify(mat_f64_comatible(mat1, mat2), "matricies are uncompatible for subtraction");
 
@@ -168,7 +168,7 @@ mat_f64 mat_f64_sub(arena mem, const mat_f64 *mat1, const mat_f64 *mat2)
 
     return out;
 }
-mat_f64 mat_f64_mul(arena mem, const mat_f64 *mat1, const mat_f64 *mat2)
+mat_f64 mat_f64_mul(arena *mem, const mat_f64 *mat1, const mat_f64 *mat2)
 {
     dbg_verify(mat_f64_comatible(mat1, mat2), "matricies are uncompatible for multiplication");
 
@@ -186,7 +186,7 @@ mat_f64 mat_f64_mul(arena mem, const mat_f64 *mat1, const mat_f64 *mat2)
 }
 
 
-mat_f64 mat_f64_mul_scalar(arena mem, const mat_f64 *mat, f64 scalar)
+mat_f64 mat_f64_mul_scalar(arena *mem, const mat_f64 *mat, f64 scalar)
 {
     mat_f64 out = mat_f64_copy(mem, mat);
 
@@ -201,7 +201,7 @@ mat_f64 mat_f64_mul_scalar(arena mem, const mat_f64 *mat, f64 scalar)
     return out;
 }
 
-mat_f64 mat_f64_add_scalar(arena mem, const mat_f64 *mat, f64 scalar)
+mat_f64 mat_f64_add_scalar(arena *mem, const mat_f64 *mat, f64 scalar)
 {
     mat_f64 out = mat_f64_copy(mem, mat);
 
@@ -217,7 +217,7 @@ mat_f64 mat_f64_add_scalar(arena mem, const mat_f64 *mat, f64 scalar)
 }
 
 
-mat_f64 mat_f64_dot(arena mem, const mat_f64 *mat1, const mat_f64 *mat2)
+mat_f64 mat_f64_dot(arena *mem, const mat_f64 *mat1, const mat_f64 *mat2)
 {
     dbg_verify(mat_f64_dot_compatible(mat1, mat2), "matricies are uncompatible for dot product x1: %zu, y1: %zu, x2: %zu, y2: %zu", mat1->rows, mat1->columns, mat2->rows, mat2->columns);
 
@@ -240,7 +240,7 @@ mat_f64 mat_f64_dot(arena mem, const mat_f64 *mat1, const mat_f64 *mat2)
     return out;
 }
 
-mat_f64 mat_f64_map(arena mem, const mat_f64 *mat, f64 (*func)(f64))
+mat_f64 mat_f64_map(arena *mem, const mat_f64 *mat, f64 (*func)(f64))
 {
     mat_f64 out = mat_f64_copy(mem, mat);
 
@@ -345,7 +345,7 @@ void mat_f64_dump_to_file(const mat_f64 *mat, FILE *file)
     fwrite(mat->data, sizeof(f64), mat->rows * mat->columns, file);
 }
 
-mat_f64 mat_f64_load_from_file(arena mem, FILE *file)
+mat_f64 mat_f64_load_from_file(arena *mem, FILE *file)
 {
     mat_f64 out = {0};
     

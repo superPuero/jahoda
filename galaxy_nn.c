@@ -1,6 +1,6 @@
 #include "galaxy_nn.h"
 
-static f64 parse_f64(arena *static_arena, arena *temp_arena, str *text, u64 *current_char)
+static f64 parse_f64(arena **static_arena, arena **temp_arena, str *text, u64 *current_char)
 {
     u64 start = *current_char;
     char c = text->data[*current_char];
@@ -19,7 +19,7 @@ static f64 parse_f64(arena *static_arena, arena *temp_arena, str *text, u64 *cur
     return strtod(ntstr.data, &end);
 }
 
-static celestial_type parse_celestial_type(arena *static_arena, arena *temp_arena, str *text, u64 *current_char)
+static celestial_type parse_celestial_type(arena **static_arena, arena **temp_arena, str *text, u64 *current_char)
 {
     (*current_char)++;
 
@@ -111,7 +111,7 @@ void galaxy_nn_train_round(galaxy_dataset *df, galaxy_nn_model *model)
     }
 }
 
-galaxy_dataset galaxy_dataset_from_csv(arena *static_arena, arena *temp_arena, strv csv_path)
+galaxy_dataset galaxy_dataset_from_csv(arena **static_arena, arena **temp_arena, strv csv_path)
 {
     galaxy_dataset out = {0};
     da_reserve(static_arena, &out.celestials, 54000);

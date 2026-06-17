@@ -57,8 +57,8 @@ struct json_object_member_s
 
 typedef struct
 {
-    arena static_mem;
-    arena temp_mem;
+    arena *static_mem;
+    arena *temp_mem;
     u32 current;
     strv view;
     bool8 done;
@@ -72,7 +72,7 @@ typedef struct
     } err; 
 } json_parser;
 
-json json_from_strv(arena static_mem, arena temp_mem, strv view);
+json json_from_strv(arena *static_mem, arena *temp_mem, strv view);
 void json_parse(json *out, json_parser *parser);
 void json_dump(json *j);
 void json_parse_string(json *out, json_parser *parser);

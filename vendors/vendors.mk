@@ -12,7 +12,7 @@ CC_FLAGS += -D_GLFW_WIN32
 
 else ifeq ($(PLATFORM),linux)
 
-CC_FLAGS += D_GLFW_X11
+CC_FLAGS += -D_GLFW_X11
 
 else ifeq ($(PLATFORM),macos)
 

@@ -23,12 +23,12 @@ BUILD_DIR = build
 TARGET = jahoda
 
 INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include" -I"vendors/glfw/include" -I"vendors/stb_truetype" -I"vendors/stb_image" -I.
-LIB_DIRECTORIES =
+LIB_DIRECTORIES = -Lpthreads -lws2_32
 LIB_FLAGS =
 
 CC_FLAGS = -std=c99 -Wall -Wextra $(INCLUDE_DIRECTORIES)
 CC_RELEASE_FLAGS = -O3 -DNDEBUG
-CC_DEBUG_FLAGS = -O0 -g
+CC_DEBUG_FLAGS = -O0
 
 include make/$(PLATFORM).mk
 include jahoda/jahoda.mk

@@ -1,7 +1,7 @@
 #include "present_pass.h"
 #include "vk_shader.h"
 
-present_pass present_pass_make(arena pf_arena, gpu_context *gpu, VkImageView input_views[jahoda_vk_frames_in_flight])
+present_pass present_pass_make(arena *pf_arena, gpu_context *gpu, VkImageView input_views[jahoda_vk_frames_in_flight])
 {
 	strv vertex_shader_path = strv_from_cstr("assets/shaders/quad.vert.spv");
 	strv fragment_shader_path = strv_from_cstr("assets/shaders/quad.frag.spv");;
@@ -359,7 +359,7 @@ void present_pass_record(gpu_context *gpu, present_pass *pass, VkImageView input
 {		
 	if(gpu->swapchain_was_refreshed)
 	{
-		arena pf_arena = pass->pf_arena;
+		arena *pf_arena = pass->pf_arena;
 		present_pass_release(gpu, pass);
 		*pass = present_pass_make(pf_arena, gpu, input_views);
 	}

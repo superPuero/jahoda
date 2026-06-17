@@ -1,6 +1,6 @@
 #include "vk_surface.h"
 
-vk_surface vk_surface_make(arena temp_arena, window *window, vk_instance *instance, vk_physical_device *pdevice)
+vk_surface vk_surface_make(arena *temp_arena, window *window, vk_instance *instance, vk_physical_device *pdevice)
 {
 	vk_surface out = {0};
 

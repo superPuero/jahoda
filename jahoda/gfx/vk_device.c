@@ -1,6 +1,6 @@
 #include "vk_device.h"
 
-void validate_device_extensions(arena temp_arena, vk_physical_device *pdevice, cstr_da *device_extensions)
+void validate_device_extensions(arena *temp_arena, vk_physical_device *pdevice, cstr_da *device_extensions)
 {
 	u32 device_extension_count;
 	vkEnumerateDeviceExtensionProperties(pdevice->handle, NULL, &device_extension_count, NULL);
@@ -29,7 +29,7 @@ void validate_device_extensions(arena temp_arena, vk_physical_device *pdevice, c
 	}	
 }
 
-vk_device vk_device_make(arena temp_arena, vk_physical_device *pdevice, vk_surface *surface)
+vk_device vk_device_make(arena *temp_arena, vk_physical_device *pdevice, vk_surface *surface)
 {
 	vk_device out = {0};
 	out.queue_graphics_index = jahoda_vk_invalid_queue_family;

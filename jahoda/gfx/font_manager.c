@@ -1,6 +1,6 @@
 #include "font_manager.h"
 
-font_id font_manager_load(font_manager *manager, gpu_context *gpu, arena static_arena, arena scratch_arena, strv font_path)
+font_id font_manager_load(font_manager *manager, gpu_context *gpu, arena *static_arena, arena *scratch_arena, strv font_path)
 {
 	verify(manager->next_font_id < jahoda_max_font_count);
 

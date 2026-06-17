@@ -10,7 +10,7 @@
 // typedef struct
 // {
 //     gpu_arena dl_st_arena;    
-//     arena *st_arena;
+//     arena **st_arena;
     
 //     VkDescriptorPool pool;
 //     VkDescriptorSetLayout descriptor_set_layout;
@@ -20,7 +20,7 @@
 
 // } vk_texture_array;
 
-// vk_texture_array texture_array_create(gpu_context *gpu, gpu_arena *dl_st_arena, arena *st_arena, u32 dl_memory_size, u32 max_entries);
+// vk_texture_array texture_array_create(gpu_context *gpu, gpu_arena *dl_st_arena, arena **st_arena, u32 dl_memory_size, u32 max_entries);
 // u32 texture_arena_record_upload(vk_texture_array *texture_array, image *image, gpu_arena *hc_pf_array, VkCommandBuffer cmd);
 
 // #endif

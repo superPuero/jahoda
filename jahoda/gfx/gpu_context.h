@@ -55,7 +55,7 @@ typedef struct
 
 } gpu_context;	
 
-gpu_context gpu_context_make(arena temp_arena, arena static_arena, window *win);
+gpu_context gpu_context_make(arena *temp_arena, arena *static_arena, window *win);
 
 VkCommandBuffer gpu_context_grab_graphics(gpu_context *gpu);
 VkCommandBuffer gpu_context_grab_transfer(gpu_context *gpu);

@@ -12,7 +12,7 @@ typedef struct
 	vec2_f32 padding; 
 } push_constants;
 
-ui ui_make(arena pf_arena, gpu_context *gpu, font_manager *fonts, font_id font_id)
+ui ui_make(arena *pf_arena, gpu_context *gpu, font_manager *fonts, font_id font_id)
 {	
 	strv vertex_shader_path = strv_from_cstr("assets/shaders/text.vert.spv");
 	strv fragment_shader_path = strv_from_cstr("assets/shaders/text.frag.spv");
@@ -489,7 +489,7 @@ void ui_record_draw(ui *ui, gpu_context *gpu, VkCommandBuffer cmd)
 {
 	if(gpu->swapchain_was_refreshed)
 	{
-		arena pf_arena = ui->pf_arena;
+		arena *pf_arena = ui->pf_arena;
 		font_manager *fonts = ui->fonts;
 		font_id font_id = ui->font_id;
 

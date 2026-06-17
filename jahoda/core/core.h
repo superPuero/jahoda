@@ -5,6 +5,7 @@
 #include "types.h"
 #include "arena.h"
 #include "da.h"
+#include "ht.h"
 #include "utils.h"
 #include "str.h"
 #include "file.h"

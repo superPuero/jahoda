@@ -45,7 +45,7 @@ entity *entity_manager_make_entity(entity_manager *manager)
 	{
 		dbg_verify(
 			manager->entities.capacity >= manager->entities.occupied, 
-			"entity manager overflow, max ammount of entitities reached %uz", 
+			"entity manager overflow, max amount of entitities reached %uz", 
 			manager->entities.occupied
 		);
 

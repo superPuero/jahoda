@@ -32,7 +32,7 @@ VkBool32 VKAPI_PTR debug_callback
 }
 
 
-void validate_required_layers(arena temp_arena, cstr_da *required_layers)
+void validate_required_layers(arena *temp_arena, cstr_da *required_layers)
 {  
 	uint32_t property_count;
 	vkEnumerateInstanceLayerProperties(&property_count, NULL);
@@ -57,12 +57,12 @@ void validate_required_layers(arena temp_arena, cstr_da *required_layers)
 			}
 		}
 
-		dbg_verify(present, "required layer %s is not found", *required_layers->it);
+		dbg_verify(present, "required layer %s is not found", *required_layers_it);
 	}
 }
 
 
-void validate_required_extensions(arena temp_arena, cstr_da *required_extension)
+void validate_required_extensions(arena *temp_arena, cstr_da *required_extension)
 {  
 	uint32_t extension_count;
 	vkEnumerateInstanceExtensionProperties(NULL, &extension_count, NULL);
@@ -91,7 +91,7 @@ void validate_required_extensions(arena temp_arena, cstr_da *required_extension)
 	}
 }
 
-vk_instance vk_instance_make(arena temp_arena)
+vk_instance vk_instance_make(arena *temp_arena)
 {
 	vk_instance out = {0};
 	cstr_da required_layers = {0};

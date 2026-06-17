@@ -1,7 +1,7 @@
 #include "font.h"
 #include <jahoda/core/file.h>
 
-font_atlas font_atlas_make(arena static_arena, arena temp_arena, strv font_path)
+font_atlas font_atlas_make(arena *static_arena, arena *temp_arena, strv font_path)
 {
     font_atlas out = {0};
     out.atlas_width = 512;  
@@ -50,7 +50,7 @@ f32 font_measure_text_width(font_atlas *font, strv text)
     return total_width;
 }
 
-text_vertex_buffer generate_text_vertices(arena mem, font_atlas *font, strv text, f32 start_x, f32 start_y)
+text_vertex_buffer generate_text_vertices(arena *mem, font_atlas *font, strv text, f32 start_x, f32 start_y)
 {
 	text_vertex_buffer out = {0};
 	da_reserve(mem, &out, text.len  *6);
