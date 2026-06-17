@@ -13,7 +13,7 @@ void *task(void*)
 
 int main()
 {		
-	arena *mem = arena_make(.capacity = Gb(16));
+	arena *mem = arena_make(.capacity = Gb(1));
 	arena *prf_mem = arena_make(.capacity = Mb(1));
 
 	thread_pool *pool = thread_pool_make(
