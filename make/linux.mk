@@ -1,5 +1,5 @@
 LIB_DIRECTORIES += -L"$(VULKAN_SDK)/lib"
-LIB_FLAGS += -lvulkan -lX11 -lpthread -ldl -lm
+LIB_FLAGS += -lvulkan -lX11 -ldl -lm
 
 clear_all:
 	find . -type f -name '*.o' -delete
