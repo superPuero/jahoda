@@ -1,5 +1,5 @@
 LIB_DIRECTORIES += -L"$(VULKAN_SDK)/lib"
-LIB_FLAGS += -lvulkan-1 -lgdi32
+LIB_FLAGS += -lvulkan-1 -lgdi32 -lws2_32
 
 CC_DEBUG_FLAGS += -g -gcodeview -fuse-ld=lld -Wl,--pdb=
 

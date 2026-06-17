@@ -16,6 +16,7 @@ typedef struct
 	u64 metadata_size;
 	u64 capacity;
 	u64 page_count;
+	u64 page_size;
 	u64 commited_pages;
 	u8 mem[];
 } arena;

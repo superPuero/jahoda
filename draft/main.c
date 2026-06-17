@@ -13,7 +13,7 @@ void *task(void*)
 }
 
 int main()
-{	
+{		
 	arena *mem = arena_make(.capacity = Tb(1));
 
 	arena *prf_mem = arena_make(.capacity = Mb(1));

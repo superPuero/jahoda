@@ -6,22 +6,24 @@
 
 arena *arena_make_(arena_params params)
 {
+	u64 page_size = os_mem_fetch_page_size();
+
 	u64 metadata_bytes = sizeof(arena);
-	u64 total_pages_needed = (metadata_bytes + params.capacity + os_page_size - 1) / os_page_size;
+	u64 total_pages_needed = (metadata_bytes + params.capacity + page_size - 1) / page_size;
 
-	arena *out = os_mem_reserve_pages(total_pages_needed);	
+	arena *out = os_mem_reserve(total_pages_needed * page_size);	
 
-	u64 metadata_pages = (metadata_bytes + os_page_size - 1) / os_page_size;	
-	os_mem_commit_pages(out, metadata_pages);
+	u64 metadata_pages = (metadata_bytes + page_size - 1) / page_size;	
+	os_mem_commit(out, metadata_pages * page_size);
 
 	verifyl(arena, params.name.len < arena_name_max_len);
 	memcpy(out->name, params.name.data, arena_name_max_len);
+	out->page_size = page_size;
 	out->capacity = params.capacity;
 	out->current = 0;
 	out->commited_pages = metadata_pages;
 	out->metadata_size = metadata_bytes;
 	out->page_count = total_pages_needed;
-
 
 	if(as_Tb(params.capacity) >= 1.0)
 	{
@@ -51,7 +53,7 @@ bool8 arena_is_at(arena *arena, void *ptr)
 
 void arena_release(arena *arena)
 {
-	os_mem_release_pages(arena, arena->page_count);
+	os_mem_release(arena, arena->page_count * arena->page_size);
 }
 
 scratch scratch_begin(arena *arena)
@@ -79,11 +81,11 @@ void *arena_push_unzeroed(arena *arena, u64 size, u64 alignment)
 	u8* out = arena->mem + arena->current + align_offset;
 	arena->current = new_current;
 
-	u64 pages_crossed = ((arena->metadata_size + arena->current + os_page_size - 1) / os_page_size);
+	u64 pages_crossed = ((arena->metadata_size + arena->current + arena->page_size - 1) / arena->page_size);
 
 	if(pages_crossed > arena->commited_pages)
 	{
-		os_mem_commit_pages(arena_page(arena, arena->commited_pages), pages_crossed - arena->commited_pages);
+		os_mem_commit(arena_page(arena, arena->commited_pages), (pages_crossed - arena->commited_pages) * arena->page_size);
 		arena->commited_pages = pages_crossed;
 	}
 
@@ -92,7 +94,7 @@ void *arena_push_unzeroed(arena *arena, u64 size, u64 alignment)
 
 void *arena_page(arena *arena, u64 page)
 {	
-	return (u8*)(arena) + (page * os_page_size);
+	return (u8*)(arena) + (page * arena->page_size);
 }
 
 u64 arena_current(arena *arena)
