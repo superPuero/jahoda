@@ -22,7 +22,9 @@ BUILD_DIR = build
 
 TARGET = jahoda
 
-INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include" -I"vendors/glfw/include" -I"vendors/stb_truetype" -I"vendors/stb_image" -I.
+INCLUDE_DIRECTORIES = -I"vendors/glfw/include" -I"vendors/stb_truetype" -I"vendors/stb_image" -I.
+
+# INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include" -I"vendors/glfw/include" -I"vendors/stb_truetype" -I"vendors/stb_image" -I.
 LIB_DIRECTORIES = -lpthread
 LIB_FLAGS =
 
