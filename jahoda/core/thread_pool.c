@@ -1,16 +1,15 @@
 #include "thread_pool.h"
-#include <pthread.h>
-
-thread_pool *thread_pool_make(arena *mem, strv name, u32 thread_count)
+    
+thread_pool *thread_pool_make_(thread_pool_config config)
 {
-    thread_pool *out = arena_ppush(mem, thread_pool);
+    thread_pool *out = arena_ppush(config.mem, thread_pool);
 
-    out->name = str_from_view_nt(mem, name);
+    out->name = str_from_view_nt(config.mem, config.name);
 
     pthread_mutex_init(&out->lock, NULL);
     pthread_cond_init(&out->notify, NULL);
 
-    da_resize(mem, &out->threads, thread_count);
+    da_resize(config.mem, &out->threads, config.size);
 
     uz index = 0;
 
@@ -18,16 +17,16 @@ thread_pool *thread_pool_make(arena *mem, strv name, u32 thread_count)
     {        
         pthread_create(it, NULL, &thread_pool_spinup_worker, out);
 
-        scratch name_scratch = scratch_begin(mem);         
+        scratch name_scratch = scratch_begin(config.mem);         
 
-        pthread_setname_np(*it, str_from_fmt_nt(mem, "(%.*s), thread: %zu", str_fmt(&out->name), index).data);
+        pthread_setname_np(*it, str_from_fmt_nt(config.mem, "(%.*s), thread: %zu", str_fmt(&out->name), index).data);
 
         scratch_end(name_scratch);
 
         index++;
     }    
 
-    infol(thread_alloc, "(%.*s) %u threads", strv_fmt(&name), thread_count);
+    infol(thread_alloc, "(%.*s) %u threads", strv_fmt(&config.name), config.size);
 
     return out;
 }

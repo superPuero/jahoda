@@ -1,5 +1,4 @@
 #include <jahoda/core/core.h>
-#include <pthread.h>
 #include <jahoda/core/thread_pool.h>
 #include <jahoda/core/net.h>
 
@@ -14,11 +13,14 @@ void *task(void*)
 
 int main()
 {		
-	arena *mem = arena_make(.capacity = Tb(1));
-
+	arena *mem = arena_make(.capacity = Gb(16));
 	arena *prf_mem = arena_make(.capacity = Mb(1));
-	
-	thread_pool *pool = thread_pool_make(mem, strv_from_cstr("http_server_pool"), 32);
+
+	thread_pool *pool = thread_pool_make(
+		.mem = mem, 
+		.name = strv_from_cstr("http_server_pool"),
+		.size = 32
+	);
 	
 	net_context net = net_context_make();
 

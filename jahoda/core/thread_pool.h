@@ -33,7 +33,15 @@ typedef struct
     u32 stop;
 } thread_pool;
 
-thread_pool *thread_pool_make(arena *mem, strv name, u32 thread_count);
+typedef struct
+{
+    arena *mem;
+    strv name; 
+    u32 size;    
+} thread_pool_config;
+
+thread_pool *thread_pool_make_(thread_pool_config config);
+#define thread_pool_make(...) thread_pool_make_((thread_pool_config){__VA_ARGS__})
 void *thread_pool_spinup_worker(void *);
 void thread_pool_schedule(thread_pool *pool, thread_pool_task task);
 void thread_pool_release(thread_pool *pool);

@@ -13,13 +13,13 @@ typedef struct
 {
 	char name[arena_name_max_len + 1];
 	u64 current;
-	u64 metadata_size;
 	u64 capacity;
 	u64 page_count;
 	u64 page_size;
-	u64 commited_pages;
+	u64 commited_pages; // includes metadata page
 	u8 mem[];
 } arena;
+
 
 typedef struct
 {
@@ -53,6 +53,7 @@ arena *arena_make_(arena_params params);
 u64 arena_current(arena *arena);
 void arena_set_pages(arena *arena, u64 start_page, u64 pages);
 void arena_reset(arena *arena);
+void arena_reset_and_decommit(arena *arena);
 void arena_release(arena *arena);
 void *arena_page(arena *arena, u64 page);
 scratch scratch_begin(arena *arena); 

@@ -22,7 +22,6 @@ arena *arena_make_(arena_params params)
 	out->capacity = params.capacity;
 	out->current = 0;
 	out->commited_pages = metadata_pages;
-	out->metadata_size = metadata_bytes;
 	out->page_count = total_pages_needed;
 
 	if(as_Tb(params.capacity) >= 1.0)
@@ -81,7 +80,8 @@ void *arena_push_unzeroed(arena *arena, u64 size, u64 alignment)
 	u8* out = arena->mem + arena->current + align_offset;
 	arena->current = new_current;
 
-	u64 pages_crossed = ((arena->metadata_size + arena->current + arena->page_size - 1) / arena->page_size);
+	u64 metadata_bytes = sizeof(arena);
+	u64 pages_crossed = ((metadata_bytes + arena->current + arena->page_size - 1) / arena->page_size);
 
 	if(pages_crossed > arena->commited_pages)
 	{
@@ -104,6 +104,22 @@ u64 arena_current(arena *arena)
 
 void arena_reset(arena *arena)
 {	
+	arena->current = 0;
+}
+
+void arena_reset_and_decommit(arena *arena)
+{
+	u64 metadata_bytes = sizeof(arena);
+	u64 metadata_pages = (metadata_bytes + arena->page_size - 1) / arena->page_size;
+
+	u64 decommit_range = (arena->commited_pages - metadata_pages) * arena->page_size;
+	
+	if(decommit_range)
+	{
+		os_mem_decommit(arena_page(arena, metadata_pages), decommit_range);
+		arena->commited_pages = metadata_pages;
+	}
+	
 	arena->current = 0;
 }
 
