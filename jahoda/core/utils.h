@@ -18,7 +18,6 @@
 #define as_Gb(expr) (as_Mb(expr) / 1024.0)
 #define as_Tb(expr) (as_Gb(expr) / 1024.0)
 
-
 #define bit(x) (1ull << x)
 
 #ifndef NDEBUG

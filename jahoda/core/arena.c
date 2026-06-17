@@ -80,7 +80,7 @@ void *arena_push_unzeroed(arena *arena, u64 size, u64 alignment)
 	u8* out = arena->mem + arena->current + align_offset;
 	arena->current = new_current;
 
-	u64 metadata_bytes = sizeof(arena);
+	u64 metadata_bytes = sizeof(*arena);
 	u64 pages_crossed = ((metadata_bytes + arena->current + arena->page_size - 1) / arena->page_size);
 
 	if(pages_crossed > arena->commited_pages)
@@ -109,7 +109,7 @@ void arena_reset(arena *arena)
 
 void arena_reset_and_decommit(arena *arena)
 {
-	u64 metadata_bytes = sizeof(arena);
+	u64 metadata_bytes = sizeof(*arena);
 	u64 metadata_pages = (metadata_bytes + arena->page_size - 1) / arena->page_size;
 
 	u64 decommit_range = (arena->commited_pages - metadata_pages) * arena->page_size;
