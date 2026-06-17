@@ -12,6 +12,7 @@ typedef int socklen_t;
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <errno.h>
 #define net_get_error() errno
 #define finna_block EAGAIN
 #endif
