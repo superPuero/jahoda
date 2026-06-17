@@ -10,8 +10,7 @@ else
     endif
 endif
 
-$(building for platform: $(PLATFORM))
-$(error STOP! The platform evaluated as: [$(PLATFORM)])
+$(info building for platform: $(PLATFORM))
 
 ifndef VULKAN_SDK
 	$(error VULKAN_SDK is not detected)
