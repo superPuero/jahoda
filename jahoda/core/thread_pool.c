@@ -19,7 +19,7 @@ thread_pool *thread_pool_make_(thread_pool_config config)
 
         scratch name_scratch = scratch_begin(config.mem);         
 
-        pthread_setname_np(*it, str_from_fmt_nt(config.mem, "(%.*s), thread: %zu", str_fmt(&out->name), index).data);
+        // pthread_setname_np(*it, str_from_fmt_nt(config.mem, "(%.*s), thread: %zu", str_fmt(&out->name), index).data);
 
         scratch_end(name_scratch);
 
