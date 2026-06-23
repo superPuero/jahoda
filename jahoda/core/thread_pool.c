@@ -1,11 +1,18 @@
 #include "thread_pool.h"
-    
+#include "platform_detect.h"
+
+#ifdef jahoda_platform_apple
+    #define pthread_setname_func(thread_id, ...) pthread_setname_np(__VA_ARGS__)
+#else
+    #define pthread_setname_func(thread_id, ...) pthread_setname_np(thread_id, __VA_ARGS__)
+#endif
+
 thread_pool *thread_pool_make_(thread_pool_config config)
 {
     thread_pool *out = arena_ppush(config.mem, thread_pool);
 
     out->name = str_from_view_nt(config.mem, config.name);
-
+    out->per_thread_mem = config.per_thread_mem;
     pthread_mutex_init(&out->lock, NULL);
     pthread_cond_init(&out->notify, NULL);
 
@@ -16,12 +23,6 @@ thread_pool *thread_pool_make_(thread_pool_config config)
     for da_each(&out->threads, it)
     {        
         pthread_create(it, NULL, &thread_pool_spinup_worker, out);
-
-        scratch name_scratch = scratch_begin(config.mem);         
-
-        // pthread_setname_np(*it, str_from_fmt_nt(config.mem, "(%.*s), thread: %zu", str_fmt(&out->name), index).data);
-
-        scratch_end(name_scratch);
 
         index++;
     }    
@@ -35,6 +36,16 @@ void *thread_pool_spinup_worker(void *arg)
 {
     thread_pool *pool = (thread_pool*)arg;
 
+    // @todo:     
+    u8 buffer[64];   
+    snprintf(&buffer, 63, "(%.*s), thread: %u", str_fmt(&pool->name), pthread_self());
+
+    pthread_setname_func(pthread_self(), buffer);
+
+    thread_context context = {
+        .mem = arena_make(.name = strv_from_cstr(buffer), .capacity = pool->per_thread_mem)
+    };
+    
     while (1) 
     {
         pthread_mutex_lock(&pool->lock);
@@ -56,8 +67,12 @@ void *thread_pool_spinup_worker(void *arg)
 
         pthread_mutex_unlock(&pool->lock);
 
-        (*(task.func))(task.arg);      
+        (*(task.func))(&context, task.arg);   
+        
+        arena_reset(context.mem);
     }
+
+    arena_release(context.mem);
 
     return NULL;
 }
@@ -70,7 +85,7 @@ void thread_pool_schedule(thread_pool *pool, thread_pool_task task)
     
     pool->task_queue[pool->tail] = task;
     pool->tail = (pool->tail + 1) % thread_pool_max_tasks;
-
+    
     pool->task_count++;
 
     pthread_mutex_unlock(&pool->lock);

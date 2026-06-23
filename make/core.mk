@@ -26,7 +26,14 @@ INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include" -I"vendors/glfw/include" -I"vend
 LIB_DIRECTORIES = -lpthread
 LIB_FLAGS =
 
-CC_FLAGS = -std=c99 -Wall -Wextra $(INCLUDE_DIRECTORIES)
+sync_log ?= false
+
+CC_FLAGS = -std=c99 -Wall -Wextra $(INCLUDE_DIRECTORIES) -Djahoda_log_sync
+
+ifeq ($(sync_log),true)
+    CC_FLAGS += -Djahoda_log_sync
+endif
+
 CC_RELEASE_FLAGS = -O3 -DNDEBUG
 CC_DEBUG_FLAGS = -O0
 

@@ -4,6 +4,8 @@
 #include "types.h"
 #include "utils.h"
 #include "da.h"
+#include "str.h"
+
 
 #define socket_max_connections 4096
 
@@ -14,8 +16,8 @@ typedef struct {} net_context;
 net_context net_context_make();
 void net_context_release(net_context *ctx);
 
-typedef u64 socket_tcp;
-typedef u64 socket_udp;
+typedef u64 tcp_socket;
+typedef u64 udp_socket;
 
 typedef union
 {
@@ -40,6 +42,10 @@ typedef struct
     u16 port;
 } endpoint_v4;
 
+address_v4 *address_v4_from_strv(arena *mem, strv view);
+endpoint_v4 *endpoint_v4_from_strv(arena *mem, strv view);
+str endpoint_v4_to_str(arena *mem, endpoint_v4 *endp);
+
 #define endpoint_v4_fmt(endp) (endp)->address.four[0], (endp)->address.four[1], (endp)->address.four[2], (endp)->address.four[3], (endp)->port
 #define endpoint_v4_make(...) (endpoint_v4){__VA_ARGS__}
 
@@ -58,8 +64,8 @@ typedef struct
 typedef struct
 {
     endpoint_v4 endp;    
-    socket_tcp sock;
-} client_tcp_v4;
+    tcp_socket sock;
+} tcp_client_v4;
 
 typedef struct
 {
@@ -67,27 +73,54 @@ typedef struct
     memv payload;
 } udp_packet_v4;
 
+typedef enum
+{
+    socket_status_success = 0,
+    socket_status_disconnect = 1,
+    socket_status_timeout = 2,
+    socket_status_retry = 3,
+    socket_status_reset = 4,
+    socket_status_would_block = 5,
+    socket_status_no_connection = 6,
+    socekt_status_there_is_more = 7
+} socket_status;
+
+typedef struct
+{
+    memv payload;
+    i32 status;
+} tcp_packet;
+
 da_declare(udp_packet_v4, udp_packet_v4_da);
 
-socket_tcp socket_tcp_make(net_context *net);
-socket_udp socket_udp_make(net_context *net);
+typedef struct
+{
+    udp_packet_v4_da entries;
+    socket_status status;
+} udp_packet_v4_bundle;
 
-void socket_tcp_release(socket_tcp sock);
-void socket_udp_release(socket_udp sock);
+socket_status socket_status_check(i32 status);
 
-client_tcp_v4 socket_tcp_v4_accept(socket_tcp sock);
-udp_packet_v4_da socket_udp_v4_recv(arena *mem, socket_udp sock, u32 packet_top_size, u32 max_reads);
+tcp_socket tcp_socket_make(net_context *net);
+udp_socket udp_socket_make(net_context *net);
 
-void socket_udp_set_blocking(socket_udp sock, bool8 blocking);
+void tcp_socket_release(tcp_socket sock);
+void udp_socket_release(udp_socket sock);
 
-bool8 socket_tcp_v4_bind(socket_tcp sock, endpoint_v4 endpoint);
-bool8 socket_udp_v4_bind(socket_udp sock, endpoint_v4 endpoint);
+tcp_client_v4 tcp_socket_v4_accept(tcp_socket sock);
+udp_packet_v4_bundle udp_socket_v4_recv_nonblocking(arena *mem, udp_socket sock, u32 packet_top_size, u32 max_reads);
 
-bool8 socket_tcp_listen(socket_tcp sock, i32 max_connections);
+void tcp_socket_set_blocking(tcp_socket sock, bool8 blocking);
+void udp_socket_set_blocking(udp_socket sock, bool8 blocking);
 
-recv_result socket_tcp_recv(arena *mem, socket_tcp sock, u32 size);
-i32 socket_udp_v4_send(socket_udp sock, memv data, endpoint_v4 endp);
+bool8 tcp_socket_v4_bind(tcp_socket sock, endpoint_v4 endpoint);
+bool8 udp_socket_v4_bind(udp_socket sock, endpoint_v4 endpoint);
 
-i32 socket_tcp_send(socket_tcp sock, memv data);
+bool8 tcp_socket_listen(tcp_socket sock, i32 max_connections);
+
+tcp_packet tcp_socket_recv(arena *mem, tcp_socket sock, u32 packet_top_size);
+i32 udp_socket_v4_send(udp_socket sock, memv data, endpoint_v4 endp);
+
+i32 tcp_socket_send(tcp_socket sock, memv data);
 
 #endif

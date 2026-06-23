@@ -5,8 +5,8 @@
 #include "types.h"
 #include "utils.h"
 
-#define arena_name_max_len 64
-#define arena_default_page_size Kb(4)
+#define arena_name_max_len 63
+#define arena_default_capacity Gb(1)
 #define arena_default_name "unnamed"
 
 typedef struct
@@ -28,6 +28,7 @@ typedef struct
 } scratch;
 
 #define arena_ppush(arena, type) arena_push(arena, sizeof(type), jahoda_alignof(type), true)
+#define arena_fpush(arena, type) arena_push(arena, sizeof(type), jahoda_alignof(type), false)
 
 #define arena_scope(arena, scope_name)\
 scratch scope_name##scratch = scratch_begin(arena);\
@@ -48,18 +49,19 @@ typedef struct
 } arena_params;
 
 arena *arena_make_(arena_params params);
-#define arena_make(...) arena_make_((arena_params){ .name = arena_default_name, .capacity = arena_default_page_size, __VA_ARGS__})
+#define arena_make(...) arena_make_((arena_params){ .name = arena_default_name, .capacity = arena_default_capacity, __VA_ARGS__})
 
 u64 arena_current(arena *arena);
+void arena_pop_to(arena *arena, u64 point);
 void arena_set_pages(arena *arena, u64 start_page, u64 pages);
-void arena_reset(arena *arena);
+u64 arena_reset(arena *arena);
 void arena_reset_and_decommit(arena *arena);
 void arena_release(arena *arena);
 void *arena_page(arena *arena, u64 page);
 scratch scratch_begin(arena *arena); 
 void scratch_end(scratch); 
 bool8 arena_is_at(arena *arena, void *ptr);
-
 void *arena_push(arena *arena, u64 size, u64 alignment, bool8 zero);
+void arena_pop(arena *arena, u64 size);
 
 #endif

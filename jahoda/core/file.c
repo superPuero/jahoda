@@ -1,5 +1,7 @@
 #include "file.h"
 
+// @todo: file_arena
+// @careful: ftell return long, which means that it can report file size only for files up to 2.14 Gb in size 
 str file_load(arena *arena, strv filename)
 {
 	str out = {0};

@@ -8,6 +8,14 @@
 #include "platform_detect.h"
 #include "types.h"
 
+#define global static
+#define internal static
+
+void log_sync_enable();
+void log_sync_lock();
+void log_sync_unlock();
+void log_sync_disable();
+
 #define Kb(expr) ((expr) * 1024ULL)
 #define Mb(expr) (Kb(expr) * 1024ULL)
 #define Gb(expr) (Mb(expr) * 1024ULL)
@@ -81,13 +89,17 @@ do\
 	}\
 }while(0)
 
+// #define jahoda_disable_info
+
 #ifndef jahoda_disable_info
 #define infol(label, ...)\
 do\
 {\
+	log_sync_lock();\
 	print_colored_if_isatty(ansi_text_color_green, "info" " (" #label ") " "[" __DATE__ " " __TIME__ "]" ": ");\
 	fprintf(stdout, "" __VA_ARGS__);\
 	fprintf(stdout, "\n");\
+	log_sync_unlock();\
 }while(0)
 #define info(...) infol(-, "" __VA_ARGS__)
 #else
@@ -98,9 +110,11 @@ do\
 #define warnl(label, ...)\
 do\
 {\
+	log_sync_lock();\
 	print_colored_if_isatty(ansi_text_color_yellow, "warn"  " (" #label ") "  "[" __DATE__ " " __TIME__ "]" ": ");\
 	fprintf(stdout, "" __VA_ARGS__);\
 	fprintf(stdout, "\n");\
+	log_sync_unlock();\
 }while(0)
 
 #define warn(...) warnl(-, "" __VA_ARGS__);
@@ -108,9 +122,11 @@ do\
 #define errl(label, ...)\
 do\
 {\
+	log_sync_lock();\
 	print_colored_if_isatty(ansi_text_color_red, "err" " (" #label ") " "[" __DATE__ " " __TIME__ "]" ": ");\
 	fprintf(stdout, "" __VA_ARGS__);\
 	fprintf(stdout, "\n");\
+	log_sync_unlock();\
 	trap();\
 }while(0)
 
@@ -181,7 +197,9 @@ typedef struct
 strv strv_make(const char *data, uz len);
 strv strv_from_cstr(const char *data);
 
-#define strv_fmt(view) (i32)(view)->len, (view)->data
+bool8 strv_compare(strv strv1, strv strv2);
 
+#define strv_fmt(view) (i32)(view)->len, (view)->data
+#define cstrv(...) strv_from_cstr(__VA_ARGS__)
 
 #endif	

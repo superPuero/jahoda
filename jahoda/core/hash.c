@@ -13,7 +13,7 @@ u64 fnv1a_hash(hashee value)
 	return out;
 }
 
-u64 fnv1a_hash_str(strv strv)	
+u64 fnv1a_hash_strv(strv strv)	
 {
 	u64 out = fnv1a_offset_bias;
 

@@ -6,6 +6,7 @@ strv strv_from_str(const str *str)
 	return (strv){.data = str->data, .len = str->occupied};
 }
 
+
 str str_from_fmt_va(arena *arena, const char *fmt, va_list list)
 {
     str out = {0};
@@ -111,7 +112,7 @@ void str_append_str(arena *arena, str *to, str *what)
 void str_append_view(arena *arena, str *str, strv view)
 {
 	// @memory: this might kill memory at some point
-	// @update: it wont, da can now expand inplace
+	// @update: it wont, da can now expand inplac
 	for(uz i = 0; i < view.len; i++)
 	{
 		da_append(arena, str, view.data[i]);

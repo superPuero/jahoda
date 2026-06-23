@@ -11,7 +11,7 @@
 
 da_declare(u64, ht_key_da);
 
-#define sht_declare(data_type, size_power_of_two, ht_name)\
+#define ht_declare(data_type, size_power_of_two, ht_name)\
 typedef struct\
 {\
 	data_type values[(1 << size_power_of_two)];\
@@ -19,19 +19,19 @@ typedef struct\
 	u64 occupied;\
 } ht_name;
 
-#define sht_cap(table) arrsize((table)->values)
+#define ht_cap(table) arrsize((table)->values)
 
-#define sht_insert(table, key_unhashed, val)\
+#define ht_insert(table, key_unhashed, val)\
 do\
 {\
-	dbg_verifyl(hash_table_overflow, (table)->occupied < sht_cap(table)  *ht_max_occupancy, "max occupancy of %.2lf was reached", ht_max_occupancy);\
+	dbg_verifyl(hash_table_overflow, (table)->occupied < ht_cap(table)  *ht_max_occupancy, "max occupancy of %.2lf was reached", ht_max_occupancy);\
 	u64 key = key_unhashed;\
 	if(key == ht_tombstone) key = ht_tombstone_replacement;\
 	u64 hash = fnv1a_hash((hashee){.value = key});\
-	u64 index = hash & (sht_cap(table) - 1);\
+	u64 index = hash & (ht_cap(table) - 1);\
 	while((table)->keys[index] != ht_tombstone && (table)->keys[index] != key)\
 	{\
-		index = (index + 1) & (sht_cap(table) - 1);\
+		index = (index + 1) & (ht_cap(table) - 1);\
 	}\
 	if ((table)->keys[index] == ht_tombstone)\
     {\
@@ -41,13 +41,13 @@ do\
 	(table)->values[index] = val;\
 }while(0)
 
-#define sht_get(table, key_unhashed, outptrptr)\
+#define ht_get(table, key_unhashed, outptrptr)\
 do\
 {\
 	u64 key = key_unhashed;\
 	if(key == ht_tombstone) key = ht_tombstone_replacement;\
 	u64 hash = fnv1a_hash((hashee){.value = key});\
-	u64 index = hash & (sht_cap(table) - 1);\
+	u64 index = hash & (ht_cap(table) - 1);\
 	*(outptrptr) = NULL;\
 	while((table)->keys[index] != ht_tombstone)\
 	{\
@@ -56,7 +56,7 @@ do\
             *(outptrptr) = (table)->values + index;\
             break;\
         }\
-		index = (index + 1) & (sht_cap(table) - 1);\
+		index = (index + 1) & (ht_cap(table) - 1);\
 	}\
 }while(0)
 

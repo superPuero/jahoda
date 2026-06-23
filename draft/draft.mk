@@ -1,4 +1,4 @@
-SRCS += draft/main.c
+SRCS += draft/main.c draft/cmd_line_args.c
 
 include make/core.mk
 

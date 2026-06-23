@@ -14,6 +14,6 @@ typedef union
 } hashee;
 
 u64 fnv1a_hash(hashee value);
-u64 fnv1a_hash_str(strv strv);
+u64 fnv1a_hash_strv(strv strv);
 
 #endif

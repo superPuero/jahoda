@@ -6,18 +6,24 @@
 #include "str.h"
 #include <pthread.h>
 
-#define thread_pool_max_tasks 1024
+#define thread_pool_max_tasks 65565
 
 da_declare(pthread_t, pthread_da)
 
 typedef struct
 {
-    void *(*func)(void *);
-    void *arg;
-}thread_pool_task;
+    arena *mem;
+} thread_context;
 
 typedef struct
 {
+    void *(*func)(thread_context *, void *);
+    void *arg;
+} thread_pool_task;
+
+typedef struct
+{
+    arena *mem;
     str name;
 
     pthread_mutex_t lock;
@@ -29,6 +35,7 @@ typedef struct
     u32 task_count;
     u32 head; 
     u32 tail; 
+    u32 per_thread_mem;
     
     u32 stop;
 } thread_pool;
@@ -38,6 +45,7 @@ typedef struct
     arena *mem;
     strv name; 
     u32 size;    
+    u32 per_thread_mem;
 } thread_pool_config;
 
 thread_pool *thread_pool_make_(thread_pool_config config);

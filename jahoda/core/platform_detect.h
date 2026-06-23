@@ -7,4 +7,8 @@
 #define jahoda_platform_unix
 #endif
 
+#ifdef __APPLE__
+#define jahoda_platform_macos
+#endif
+
 #endif

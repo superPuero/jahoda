@@ -14,15 +14,17 @@ arena *arena_make_(arena_params params)
 	arena *out = os_mem_reserve(total_pages_needed * page_size);	
 
 	u64 metadata_pages = (metadata_bytes + page_size - 1) / page_size;	
-	os_mem_commit(out, metadata_pages * page_size);
+	os_mem_commit(out, metadata_pages * page_size, os_mem_flag_read_write);
 
-	verifyl(arena, params.name.len < arena_name_max_len);
+	verifyl(arena_make, params.name.len <= arena_name_max_len);
 	memcpy(out->name, params.name.data, arena_name_max_len);
-	out->page_size = page_size;
-	out->capacity = params.capacity;
+
+	out->name[arena_name_max_len - 1] = '\0';
 	out->current = 0;
-	out->commited_pages = metadata_pages;
+	out->capacity = params.capacity;
 	out->page_count = total_pages_needed;
+	out->page_size = page_size;
+	out->commited_pages = metadata_pages;
 
 	if(as_Tb(params.capacity) >= 1.0)
 	{
@@ -85,7 +87,7 @@ void *arena_push_unzeroed(arena *arena, u64 size, u64 alignment)
 
 	if(pages_crossed > arena->commited_pages)
 	{
-		os_mem_commit(arena_page(arena, arena->commited_pages), (pages_crossed - arena->commited_pages) * arena->page_size);
+		os_mem_commit(arena_page(arena, arena->commited_pages), (pages_crossed - arena->commited_pages) * arena->page_size, os_mem_flag_read_write);
 		arena->commited_pages = pages_crossed;
 	}
 
@@ -102,9 +104,11 @@ u64 arena_current(arena *arena)
 	return arena->current; 
 }
 
-void arena_reset(arena *arena)
+u64 arena_reset(arena *arena)
 {	
+	u64 usage = arena->current;
 	arena->current = 0;
+	return usage;
 }
 
 void arena_reset_and_decommit(arena *arena)
@@ -115,7 +119,7 @@ void arena_reset_and_decommit(arena *arena)
 	u64 decommit_range = (arena->commited_pages - metadata_pages) * arena->page_size;
 	
 	if(decommit_range)
-	{
+	{	
 		os_mem_decommit(arena_page(arena, metadata_pages), decommit_range);
 		arena->commited_pages = metadata_pages;
 	}
@@ -128,6 +132,16 @@ void *arena_push(arena *arena, u64 size, u64 alignment, bool8 zero)
 	u8 *out = arena_push_unzeroed(arena, size, alignment);
 	if(zero) { memset(out, 0, size); }
 	return out;
+}
+
+void arena_pop_to(arena *arena, u64 point)
+{
+	arena->current = point;
+}
+
+void arena_pop(arena *arena, u64 size)
+{
+	arena->current -= size;
 }
 
 
