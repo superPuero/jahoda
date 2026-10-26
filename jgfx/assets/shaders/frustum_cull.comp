@@ -1,0 +1,82 @@
+#version 460
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require 
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+struct VkDrawIndexedIndirectCommand {
+    uint indexCount;
+    uint instanceCount;
+    uint firstIndex;
+    uint vertexOffset;
+    uint firstInstance;
+};
+
+layout(buffer_reference, scalar, buffer_reference_align = 16) readonly buffer mesh_bounding_sphere_buffer { 
+    vec4 bounding_spheres[]; 
+};
+
+layout(buffer_reference, scalar) readonly buffer intance_mesh_buffer { 
+    uint mesh_ids[]; 
+};
+
+layout(buffer_reference, scalar, buffer_reference_align = 16) readonly buffer instance_transform_buffer {
+    mat4 transform[]; 
+};
+
+layout(buffer_reference, scalar) buffer indirect_command_buffer { VkDrawIndexedIndirectCommand cmds[]; };
+layout(buffer_reference, scalar) writeonly buffer visibility_id_buffer { uint ids[]; };
+
+layout(buffer_reference, scalar) readonly buffer dispatch_buffer {
+    mesh_bounding_sphere_buffer mesh_bounds;        
+    intance_mesh_buffer cull_instance_data;
+    instance_transform_buffer draw_instance_data;
+    indirect_command_buffer indirect_buffer;
+    visibility_id_buffer visibility_ids;
+};
+
+layout(push_constant, scalar) uniform _ {
+    vec4 planes[6];
+    dispatch_buffer dispatch;
+    uint total_instances;
+} pc;
+
+void main() 
+{
+    uint gID = gl_GlobalInvocationID.x;
+    if (gID >= pc.total_instances) { return; }
+
+    uint mesh_id = pc.dispatch.cull_instance_data.mesh_ids[gID];
+
+    vec4 local_sphere = pc.dispatch.mesh_bounds.bounding_spheres[mesh_id];
+    
+    mat4 transform = pc.dispatch.draw_instance_data.transform[gID];
+
+    float scale_x2 = dot(transform[0].xyz, transform[0].xyz);
+    float scale_y2 = dot(transform[1].xyz, transform[1].xyz);
+    float scale_z2 = dot(transform[2].xyz, transform[2].xyz);
+    float max_scale = sqrt(max(scale_x2, max(scale_y2, scale_z2)));
+
+    vec3 world_center = (transform * vec4(local_sphere.xyz, 1.0)).xyz;
+    float scaled_radius = local_sphere.w * max_scale;  
+
+    bool visible = true;
+
+    for (int i = 0; i < 6; i++) 
+    {
+        float distance = dot(pc.planes[i].xyz, world_center) + pc.planes[i].w;        
+        if (distance < -scaled_radius) 
+        {
+            visible = false;
+            break;
+        }
+    }
+
+    if(visible)
+    {
+        uint offset = atomicAdd(pc.dispatch.indirect_buffer.cmds[mesh_id].instanceCount, 1);
+        uint offset2 = pc.dispatch.indirect_buffer.cmds[mesh_id].firstInstance + offset;
+        pc.dispatch.visibility_ids.ids[offset2] = gID;
+    }
+
+}
