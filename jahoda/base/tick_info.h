@@ -8,7 +8,7 @@ typedef struct
 	f64 dt;
 	u64 tick;
 	f64 begin;
-	f64 end;
+	f64 time;
 } tick_info;
 
 void tick_info_update(tick_info *ti);

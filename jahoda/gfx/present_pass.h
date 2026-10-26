@@ -2,26 +2,26 @@
 #define jahoda_present_pass
 
 #include "gpu_context.h"
+#include "gpu_utils.h"
+#include "render_state.h"
+
 
 typedef struct
 {
-	arena *pf_arena;
-
-	VkPipelineLayout pipeline_layout;
-	VkPipeline pipeline;
-	VkShaderModule vertex_shader;	
-	VkShaderModule fragment_shader;
-	VkDescriptorSetLayout descriptor_set_layout;
-	VkDescriptorPool descriptor_pool;
-	VkSampler sampler;	
-	VkFramebuffer framebuffers[jahoda_vk_max_swapchain_image_count];
-	VkDescriptorSet descriptor_sets[jahoda_vk_frames_in_flight];	
-	VkRenderPass render_pass;
+	render_state render_state;
+	gpu_buffer *descriptor_buffer[frames_in_flight];
+	VkDescriptorBufferBindingInfoEXT descriptor_binding_info[frames_in_flight];
 } present_pass;
 
-present_pass present_pass_make(arena *pf_arena, gpu_context *gpu, VkImageView input_views[jahoda_vk_frames_in_flight]);
-void present_pass_release(gpu_context *gpu, present_pass *pass);
+void present_pass_refresh(present_pass *pass, gpu_context *gpu, gpu_texture *input_textures per_frame_in_flight, arena *pf_arena);
+void present_pass_release(present_pass *pass, gpu_context *gpu);
 
-void present_pass_record(gpu_context *gpu, present_pass *pass,  VkImageView input_views[jahoda_vk_frames_in_flight], VkCommandBuffer cmd);
+void present_pass_record(
+	VkCommandBuffer cmd, 
+	present_pass *pass, 
+	gpu_context *gpu, 
+	arena *pf_arena,
+	gpu_buffer_arena *coherent_descriptor_buffer_arena,
+	gpu_texture *input_textures per_frame_in_flight);
 
 #endif

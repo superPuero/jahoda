@@ -64,7 +64,9 @@ dt 			vec2_##dt##_dot(vec2_##dt l, vec2_##dt r);
 numeric_data_type_list
 #undef X
 
-typedef vec2_f64 vec2;
+typedef vec2_f32 vec2;
+typedef vec2_u32 uvec2;
+typedef vec2_i32 ivec2;
 
 #define X(dt)\
 typedef struct\
@@ -80,6 +82,10 @@ vec3_##dt 	vec3_##dt##_div(vec3_##dt l, vec3_##dt r);\
 dt 			vec3_##dt##_dot(vec3_##dt l, vec3_##dt r);
 numeric_data_type_list
 #undef X
+
+typedef vec3_f32 vec3;
+typedef vec3_u32 uvec3;
+typedef vec3_i32 ivec3;
 
 #define X(dt)\
 typedef struct\
@@ -110,9 +116,22 @@ mat4_##dt 	mat4_##dt##_add(mat4_##dt l, mat4_##dt r);\
 mat4_##dt 	mat4_##dt##_sub(mat4_##dt l, mat4_##dt r);\
 mat4_##dt 	mat4_##dt##_mul(mat4_##dt l, mat4_##dt r);\
 mat4_##dt 	mat4_##dt##_div(mat4_##dt l, mat4_##dt r);\
-dt 			mat4_##dt##_dot(mat4_##dt l, mat4_##dt r);
+mat4_##dt 	mat4_##dt##_translate(mat4_##dt mat, vec3_##dt v); \
+void 		mat4_##dt##_translate_ip(mat4_##dt *mat, vec3_##dt v); \
+mat4_##dt 	mat4_##dt##_fill(dt v);\
+dt 			mat4_##dt##_dot(mat4_##dt l, mat4_##dt r);\
+mat4_##dt 	mat4_##dt##_rotate(mat4_##dt m, dt angle_radians, vec3_##dt axis);\
+void	 	mat4_##dt##_rotate_ip(mat4_##dt *m, dt angle_radians, vec3_##dt axis);\
+mat4_##dt 	mat4_##dt##_scale(mat4_##dt m, vec3_##dt v);\
+void 		mat4_##dt##_scale_ip(mat4_##dt *m, vec3_##dt v);\
+mat4_##dt 	mat4_##dt##_translate(mat4_##dt m, vec3_##dt v);\
+dt 			mat4_##dt##_dot(mat4_##dt l, mat4_##dt r);\
+mat4_##dt 	mat4_##dt##_identity(dt val);\
+mat4_##dt 	mat4_##dt##_inverse(mat4_##dt m);
 numeric_data_type_list
 #undef X
+
+typedef mat4_f32 mat4;
 
 typedef struct
 {
@@ -126,7 +145,8 @@ typedef struct
 
 #define mat4_f32_ortho(...) mat4_f32_ortho_((mat4_f32_ortho_params){__VA_ARGS__})
 
-mat4_f32 mat4_f32_identity();
 mat4_f32 mat4_f32_ortho_(mat4_f32_ortho_params params);
-mat4_f32 mat4_f32_proj(f32 fov_y_radians, f32 aspect_ratio, f32 near_z, f32 far_z);
+mat4_f32 mat4_f32_proj(f32 fov_angles, f32 aspect_ratio, f32 near_z, f32 far_z);
+void mat4_f32_mul_fast(const mat4_f32* l, const mat4_f32* r, mat4_f32* out);
+
 #endif

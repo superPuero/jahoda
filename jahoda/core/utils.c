@@ -2,6 +2,8 @@
 #include "platform_detect.h"
 #include "pthread.h"
 
+#define jahoda_log_sync
+ 
 #ifdef jahoda_log_sync
 
 internal pthread_mutex_t log_sync_mutex = PTHREAD_MUTEX_INITIALIZER; 
@@ -21,22 +23,39 @@ void log_sync_lock() {}
 void log_sync_unlock() {}
 #endif
 
-strv strv_make(const char *data, uz len)
-{
-	return (strv){.data = data, .len = len};
-}
 
-strv strv_from_cstr(const char *data)
+void print_colored_if_isatty(const char* color, const char* str)
 {
-	return strv_make(data, strlen(data));
-}
-
-bool8 strv_compare(strv strv1, strv strv2)
-{
-	if(strv1.len != strv2.len)
+	if(jahoda_isatty(jahoda_fileno(get_log_dest())))
 	{
-		return false;
+		fprintf(get_log_dest(),
+			ansi_esq_seq "[" "%s" "m" 
+			"%s"
+			ansi_esq_seq "[" ansi_text_color_default "m",
+			color,
+			str	
+		);
 	}
+	else
+	{
+		fprintf(get_log_dest(), "%s",
+			str
+		);
+	}
+}
 
-	return strncmp(strv1.data, strv2.data, strv2.len) == 0;
+b8 is_whitespace(u8 ch)
+{
+	return ch == ' ' || ch == '\n' || ch == '\t' || ch == '\v' || ch == 'f' || ch == '\r';
+}
+
+internal FILE *log_dest_file;
+
+void log_dest(FILE *file)
+{
+	log_dest_file = file;
+}
+FILE *get_log_dest()
+{
+	return log_dest_file; 
 }

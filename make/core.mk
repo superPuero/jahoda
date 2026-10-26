@@ -1,3 +1,5 @@
+CORE_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+
 ifeq ($(OS),Windows_NT)
     PLATFORM = windows
 else
@@ -18,34 +20,25 @@ endif
 
 CC = clang
 
-BUILD_DIR = build
-
-TARGET = jahoda
-
-INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include" -I"vendors/glfw/include" -I"vendors/stb_truetype" -I"vendors/stb_image" -I.
+INCLUDE_DIRECTORIES = -I"$(VULKAN_SDK)/include"
 LIB_DIRECTORIES = -lpthread
 LIB_FLAGS =
 
 sync_log ?= false
 
-CC_FLAGS = -std=c99 -Wall -Wextra $(INCLUDE_DIRECTORIES) -Djahoda_log_sync
+CC_FLAGS = -std=c99 -Wall -Wextra -mavx2 -mfma $(INCLUDE_DIRECTORIES) 
 
-ifeq ($(sync_log),true)
-    CC_FLAGS += -Djahoda_log_sync
-endif
-
-CC_RELEASE_FLAGS = -O3 -DNDEBUG
+CC_RELEASE_FLAGS = -O3 -DNDEBUG -march=native
 CC_DEBUG_FLAGS = -O0
 
-include make/$(PLATFORM).mk
-include jahoda/jahoda.mk
-include vendors/vendors.mk
+include $(CORE_DIR)$(PLATFORM).mk
+include $(CORE_DIR)../jahoda/jahoda.mk
 
 OBJS += $(SRCS:.c=.o)
 
 basic_build: $(OBJS)
 	$(CC) $(OBJS) $(CC_FLAGS) -o $(TARGET) $(LIB_DIRECTORIES) $(LIB_FLAGS)
-
+    
 %.o: %.c
 	$(CC) $(CC_FLAGS) -c $< -o $@
 

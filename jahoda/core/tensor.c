@@ -1,6 +1,7 @@
 #include "tensor.h"
 
 #include <math.h>
+#include <stdlib.h>
 
 tensor_f64 _tensor_f64_make(tensor_config cfg)
 {
@@ -18,7 +19,7 @@ tensor_f64 _tensor_f64_make(tensor_config cfg)
         out.stride[reverse_idx] = out.size;
         out.size *= out.shape[reverse_idx];
     }
-    out.data = arena_push(cfg.mem, out.size * sizeof(f64), jahoda_alignof(f64), cfg.zero);
+    out.data = arena_push_bytes(cfg.mem, out.size * sizeof(f64), alignof(f64), cfg.zero);
     return out;
 }
 
@@ -42,7 +43,7 @@ tensor_f64 _tensor_f64_make_rand(tensor_config_rand cfg)
     return out;
 }
 
-bool8 tensor_f64_verify_index(tensor_f64 *tensor, tensor_index index)
+b8 tensor_f64_verify_index(tensor_f64 *tensor, tensor_index index)
 {
     return  (tensor->stride[0] * index.value[0] + 
             tensor->stride[1] * index.value[1] +
@@ -72,7 +73,7 @@ tensor_f64 tensor_f64_copy(arena *mem, const tensor_f64 *tensor)
 {
     tensor_f64 out = *tensor;
 
-    out.data = arena_push(mem, out.size * sizeof(f64), jahoda_alignof(f64), false);
+    out.data = arena_push_bytes(mem, out.size * sizeof(f64), alignof(f64), false);
 
     memcpy(out.data, tensor->data, out.size * sizeof(f64));
 
@@ -212,19 +213,19 @@ void tensor_f64_dump_shape(tensor_f64 *tensor)
 
 }
 
-bool8 tensor_f64_size_compatible(const tensor_f64 *t1, const tensor_f64 *t2)
+b8 tensor_f64_size_compatible(const tensor_f64 *t1, const tensor_f64 *t2)
 {
     return t1->size == t2->size;
 }
 
-bool8 tensor_f64_dot_compatible(const tensor_f64 *t1, const tensor_f64 *t2)
+b8 tensor_f64_dot_compatible(const tensor_f64 *t1, const tensor_f64 *t2)
 {
     if (t1->rank < 2 || t2->rank < 2) return false;
 
     return t1->shape[t1->rank - 1] == t2->shape[t2->rank - 2];
 }
 
-bool8 tensor_f64_bmm_compatible(tensor_f64 *t1, tensor_f64 *t2) 
+b8 tensor_f64_bmm_compatible(tensor_f64 *t1, tensor_f64 *t2) 
 {
     if (!tensor_f64_dot_compatible(t1, t2)) 
     {
@@ -271,7 +272,7 @@ tensor_f64 tensor_f64_sum_batch_dim(arena *mem, const tensor_f64 *t)
     
     out.size = slice_size;
     
-    out.data = arena_push(mem, out.size * sizeof(f64), jahoda_alignof(f64), true);
+    out.data = arena_push_bytes(mem, out.size * sizeof(f64), alignof(f64), true);
 
     for (uz b = 0; b < B; b++) 
     {
@@ -433,7 +434,7 @@ tensor_f64 tensor_f64_load_from_file(arena *mem, FILE *file)
     fread(&out.shape, sizeof(out.shape), 1, file);
     fread(&out.stride, sizeof(out.stride), 1, file);
     
-    out.data = arena_push(mem, out.size * sizeof(f64), jahoda_alignof(f64),  false);
+    out.data = arena_push_bytes(mem, out.size * sizeof(f64), alignof(f64),  false);
     fread(out.data, sizeof(f64), out.size,  file);
 
     return out;

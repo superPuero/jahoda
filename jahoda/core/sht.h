@@ -13,7 +13,7 @@ typedef struct\
 {\
 	data_type values[(1 << size_power_of_two)];\
 	u8 keys[(1 << size_power_of_two)][max_string_size + 2];\
-	u64 occupied;\
+	u64 occupied;\	
 } ht_name;
 
 #define sht_keysize(table) sizeof((table)->keys[0]) - 2
@@ -29,7 +29,7 @@ do\
 	dbg_verifyl(hash_table_overflow, (table)->occupied < sht_cap(table)  *ht_max_occupancy, "max occupancy of %.2lf was reached", ht_max_occupancy);\
 	u64 hash = fnv1a_hash_strv(_key);\
 	u64 index = hash & (sht_cap(table) - 1);\
-    	while((table)->keys[index][sht_sentinel(table)] != '\0' && (strncmp(_key.data, (table)->keys[index], sht_keysize(table)) != 0))\
+    while((table)->keys[index][sht_sentinel(table)] != '\0' && (strncmp(_key.data, (table)->keys[index], sht_keysize(table)) != 0))\
 	{\
 		index = (index + 1) & (sht_cap(table) - 1);\
 	}\
@@ -70,7 +70,7 @@ do\
 	}\
 }while(0)
 
-#define sht_each(key_it, val_it, table)\
-()  
+#define sht_each(key_it, table)\
+(typeof(table->keys) *key_it = (table)->keys; key_it < (table)->keys + sizeof((table)->keys); key_it++)
 
 #endif

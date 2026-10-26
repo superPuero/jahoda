@@ -1,27 +1,25 @@
 #ifndef jahoda_gpu_context
 #define jahoda_gpu_context
 
-#include <shaderc/shaderc.h>
-#include "vk_instance.h"
-#include "vk_physical_device.h"
-#include "vk_surface.h"
-#include "vk_device.h"
-#include "vk_swapchain.h"
+#include "gpu_instance.h"
+#include "gpu_physical_device.h"
+#include "gpu_surface.h"
+#include "gpu_device.h"
+#include "gpu_swapchain.h"
 #include "gpu_arena.h"
-#include "render_target_manager.h"
+#include "gpu_memory_pool.h"
 
-#define jahoda_gpu_context_max_graphics_cmd_count 64
+#define jahoda_gpu_context_max_graphics_cmd_count 128
 
-#define temp_host_coherent_buffer_arena_size Mb(16)
-#define static_device_local_swapchain_image_arena_size Mb(32)
+#define screen_buffer_mem_16_9(pixel_width, pixel_bit_size) (u32)(pixel_width * (pixel_width * 16/9) * (pixel_bit_size / 8))
 
 typedef struct
 {
-	vk_instance instance;
-	vk_physical_device pdevice;
-	vk_surface surface;
-	vk_device device;	
-	vk_swapchain swapchain;
+	gpu_instance instance;
+	gpu_physical_device *pdevice;
+	gpu_surface surface;
+	gpu_device device;	
+	gpu_swapchain swapchain;
 	
 	VkQueue graphics_queue;
 	VkQueue transfer_queue;
@@ -29,43 +27,48 @@ typedef struct
 	
 	u32 frame_index;
 	u32 swapchain_image_index;	
-	bool8 swapchain_needs_refresh;
-	bool8 swapchain_was_refreshed;
+	b8 swapchain_needs_refresh;
+	b8 swapchain_was_refreshed;
 	
 	VkCommandPool graphics_pool;
 	VkCommandPool transfer_pool;
 		
-	VkSemaphore graphics_semaphores[jahoda_vk_max_swapchain_image_count];
+	VkSemaphore graphics_semaphores[gpu_max_swapchain_image_count];
 	
-	VkFence render_fences[jahoda_vk_frames_in_flight];
-	u32 next_graphics_buffer[jahoda_vk_frames_in_flight];
-	VkCommandBuffer graphics_buffers[jahoda_gpu_context_max_graphics_cmd_count][jahoda_vk_frames_in_flight];
+	VkFence render_fences[frames_in_flight];
 	
-	u32 next_transfer_buffer[jahoda_vk_frames_in_flight];
-	VkCommandBuffer transfer_buffers[jahoda_gpu_context_max_graphics_cmd_count][jahoda_vk_frames_in_flight];
+	u32 next_graphics_buffer[frames_in_flight];
+	VkCommandBuffer graphics_buffers[frames_in_flight][jahoda_gpu_context_max_graphics_cmd_count];
 	
-	u32 commited_graphics_count[jahoda_vk_frames_in_flight];
-	VkCommandBuffer commited_graphics_buffers[jahoda_gpu_context_max_graphics_cmd_count][jahoda_vk_frames_in_flight];
+	u32 commited_graphics_count[frames_in_flight];
+	VkCommandBuffer commited_graphics_buffers[frames_in_flight][jahoda_gpu_context_max_graphics_cmd_count];
 	
-	VkSemaphore image_avalible_semaphores[jahoda_vk_frames_in_flight];
+	VkSemaphore image_avalible_semaphores[frames_in_flight];
 	
-	gpu_arena temp_hc_buf_arenas[jahoda_vk_frames_in_flight];
-	gpu_arena static_dl_img_arenas[jahoda_vk_frames_in_flight]; 	
-	gpu_arena static_dl_sw_img_arenas[jahoda_vk_frames_in_flight]; 	
-
+	VkPresentModeKHR present_mode;
 } gpu_context;	
 
-gpu_context gpu_context_make(arena *temp_arena, arena *static_arena, window *win);
+typedef struct
+{
+	arena *temp_arena; 
+	arena *static_arena;
+	window *win;
+	
+	VkPresentModeKHR present_mode;
+} gpu_context_params;
+
+#define gpu_context_make(...) gpu_context_make_((gpu_context_params){__VA_ARGS__});
+gpu_context gpu_context_make_(gpu_context_params params);
 
 VkCommandBuffer gpu_context_grab_graphics(gpu_context *gpu);
-VkCommandBuffer gpu_context_grab_transfer(gpu_context *gpu);
-
 void gpu_context_commit_graphics(gpu_context *gpu, VkCommandBuffer cmd);
-
 void gpu_context_release(gpu_context *gpu);
-bool gpu_context_try_begin_frame(gpu_context *ctx, window *win);
-void gpu_context_end_frame(gpu_context *ctx);
-void gpu_context_immidiate_graphics(gpu_context *gpu, VkCommandBuffer cmd);
-void gpu_context_immidiate_transfer(gpu_context *gpu, VkCommandBuffer cmd);
+void gpu_context_set_present_mode(gpu_context *gpu, VkPresentModeKHR present_mode);
+b8 gpu_context_try_begin_frame(gpu_context *gpu, window *win, arena *temp_mem);
+void gpu_context_end_frame(gpu_context *gpu, arena *temp_mem);
+void gpu_context_immidiate_graphics(gpu_context *gpu);
+
+u32 gpu_buffer_type_index(gpu_device *device, gpu_physical_device *pdevice, VkBufferUsageFlags usage, VkBufferCreateFlags flags, VkMemoryPropertyFlags properties);
+u32 gpu_image_type_index(gpu_device *device, gpu_physical_device *pdevice, VkFormat format, VkSampleCountFlagBits samples, VkImageCreateFlags flags, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
 
 #endif

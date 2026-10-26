@@ -4,7 +4,7 @@
 void tick_info_update(tick_info *ti)
 {
 	ti->tick++;
-	ti->dt = ti->end - ti->begin;
-	ti->begin = ti->end;
-	ti->end = jahoda_time_now();
+	ti->dt = ti->time - ti->begin;
+	ti->begin = ti->time;
+	ti->time = (f64)jahoda_time_now();
 }

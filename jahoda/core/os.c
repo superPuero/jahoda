@@ -60,20 +60,21 @@
             VirtualFree(mem, 0, MEM_RELEASE);
         }
         
-        u64 os_mem_fetch_page_size()
-        {
+        os_hardware_info os_fetch_hardware_info()
+        {            
+            os_hardware_info info = {0};
             SYSTEM_INFO sys_info;
             GetSystemInfo(&sys_info);
-            return sys_info.dwPageSize;
-        }
+            info.logical_processors = sys_info.dwNumberOfProcessors;
+            info.page_size          = sys_info.dwPageSize;            
 
-        u64 os_mem_fetch_allocation_granularity()
-        {
-            SYSTEM_INFO sys_info;
-            GetSystemInfo(&sys_info);
-            return sys_info.dwAllocationGranularity; 
-        }
+            MEMORYSTATUSEX mem_info;
+            mem_info.dwLength = sizeof(MEMORYSTATUSEX);
+            verify(GlobalMemoryStatusEx(&mem_info));            
+            info.total_physical_memory = mem_info.ullTotalPhys;
 
+            return info;
+        }
 
 #elif defined(jahoda_platform_unix)
     #include <sys/mman.h>
@@ -112,7 +113,7 @@
     
     void *os_mem_reserve(u64 pages) 
     {
-        uz total_bytes = pages * os_mem_fetch_page_size();    
+        uz total_bytes = pages * os_fetch_hardware_info().page_size;    
         void *result = mmap(NULL, total_bytes, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);    
         verifyl(os_mem_reserve, result != MAP_FAILED, "memory reserve failed");
         return result;
@@ -134,13 +135,23 @@
         munmap(mem, amount);
     }
     
-    u64 os_mem_fetch_page_size()
-    {
-        return sysconf(_SC_PAGESIZE);
-    }
+    os_hardware_info os_fetch_hardware_info()
+    {        
+        os_hardware_info info = {0};
 
-    u64 os_mem_fetch_allocation_granularity()
-    {
-        return os_mem_fetch_page_size();
-    }
+        info.logical_processors = sysconf(_SC_NPROCESSORS_ONLN);
+        dbg_verify(info.logical_processors);
+        
+        info.page_size = sysconf(_SC_PAGESIZE);
+        dbg_verify(info.page_size);
+        
+        u64 phys_pages = sysconf(_SC_PHYS_PAGES);
+        dbg_verify(phys_pages);
+        info.total_physical_memory = phys_pages * info.page_size;            
+
+        info.cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+        dbg_verify(info.cache_line_size);
+
+        return info;            
+    }   
 #endif

@@ -17,7 +17,7 @@ typedef struct
     arena *mem;
     u32 shape[8];
     u8 rank;         
-    bool8 zero;
+    b8 zero;
 } tensor_config;
 
 typedef struct
@@ -48,13 +48,12 @@ tensor_f64 _tensor_f64_make_view(tensor_view_config cfg);
 
 tensor_f64 tensor_f64_copy(arena *mem, const tensor_f64 *tensor);
 
-
 f64 *_tensor_f64_at(tensor_f64 *tensor, tensor_index index);
 void tensor_f64_dump(tensor_f64 *tensor);
 void tensor_f64_dump_shape(tensor_f64 *tensor);
 
-bool8 tensor_f64_size_compatible(const tensor_f64 *t1, const tensor_f64 *t2);
-bool8 tensor_f64_dot_compatible(const tensor_f64 *t1, const tensor_f64 *t2);
+b8 tensor_f64_size_compatible(const tensor_f64 *t1, const tensor_f64 *t2);
+b8 tensor_f64_dot_compatible(const tensor_f64 *t1, const tensor_f64 *t2);
 
 void tensor_f64_add_inplace(tensor_f64 *dest_tensor, const tensor_f64 *add_tensor);
 

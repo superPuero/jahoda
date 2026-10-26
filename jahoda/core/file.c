@@ -1,31 +1,45 @@
 #include "file.h"
 
-// @todo: file_arena
-// @careful: ftell return long, which means that it can report file size only for files up to 2.14 Gb in size 
-str file_load(arena *arena, strv filename)
-{
-	str out = {0};
-	FILE *cfile = NULL;
+str8 file_load(arena *arena, str8 path)
+{		
+	str8 out;
 
-	scratch scratch = scratch_begin(arena);
-
-	str filename_nt = str_from_view_nt(arena, filename);		
-	cfile = fopen(filename_nt.data, "rb");	
-
-	scratch_end(scratch);
-
-	if (!cfile)
+	file_scope(cfile, path.data, "rb")
 	{
-		errl(could_not_open_file, "%.*s", strv_fmt(&filename));
-	}
-
-	fseek(cfile, 0, SEEK_END);
-	da_resize(arena, &out, (uz)ftell(cfile));
-	rewind(cfile);
-
-	fread(out.data, 1, out.occupied, cfile);
+		if (!cfile)
+		{
+			errl(could_not_open_file, str8_fmt, str8_arg(path));
+		}
 	
-	fclose(cfile);
+		fseek(cfile, 0, SEEK_END);
+		out = str8_make_empty(arena, ftell(cfile));	
+		rewind(cfile);
+	
+		fread(out.data, 1, out.size, cfile);		
+	}	
+
+	return out;
+}
+
+str8 *file_try_load(arena *arena, str8 path)
+{		
+	str8 *out;
+
+	file_scope(cfile, path.data, "rb")
+	{
+		if (!cfile)
+		{
+			return NULL;
+		}
+		
+		out = arena_ppush(arena, str8*);
+
+		fseek(cfile, 0, SEEK_END);
+		*out = str8_make_empty(arena, ftell(cfile));	
+		rewind(cfile);
+	
+		fread(out->data, 1, out->size, cfile);		
+	}	
 
 	return out;
 }

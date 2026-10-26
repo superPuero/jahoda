@@ -1,12 +1,9 @@
-#include <assert.h>
-#include <stdio.h>
 #include "arena.h"
 #include "os.h"
 
-
 arena *arena_make_(arena_params params)
 {
-	u64 page_size = os_mem_fetch_page_size();
+	u64 page_size = os_fetch_hardware_info().page_size;
 
 	u64 metadata_bytes = sizeof(arena);
 	u64 total_pages_needed = (metadata_bytes + params.capacity + page_size - 1) / page_size;
@@ -16,11 +13,8 @@ arena *arena_make_(arena_params params)
 	u64 metadata_pages = (metadata_bytes + page_size - 1) / page_size;	
 	os_mem_commit(out, metadata_pages * page_size, os_mem_flag_read_write);
 
-	verifyl(arena_make, params.name.len <= arena_name_max_len);
-	memcpy(out->name, params.name.data, arena_name_max_len);
-
-	out->name[arena_name_max_len - 1] = '\0';
 	out->current = 0;
+	out->name = params.name;
 	out->capacity = params.capacity;
 	out->page_count = total_pages_needed;
 	out->page_size = page_size;
@@ -28,26 +22,25 @@ arena *arena_make_(arena_params params)
 
 	if(as_Tb(params.capacity) >= 1.0)
 	{
-		infol(alloc, "(%.*s) reserved %.2lf Tb", strv_fmt(&params.name), as_Tb(params.capacity));
+		infol(cpu_mem, "[%s] reserved %.2lf Tb", out->name.data, as_Tb(params.capacity));
 	}	
-
 	else if(as_Gb(params.capacity) >= 1.0)
 	{
-		infol(alloc, "(%.*s) reserved %.2lf Gb", strv_fmt(&params.name), as_Gb(params.capacity));
+		infol(cpu_mem, "[%s] reserved %.2lf Gb", out->name.data, as_Gb(params.capacity));
 	}
 	else if(as_Mb(params.capacity) >= 1.0)
 	{
-		infol(alloc, "(%.*s) reserved %.2lf Mb", strv_fmt(&params.name), as_Mb(params.capacity));
+		infol(cpu_mem, "[%s] reserved %.2lf Mb", out->name.data, as_Mb(params.capacity));
 	}
 	else
 	{
-		infol(alloc, "(%.*s) reserved %.2lf Kb", strv_fmt(&params.name), as_Kb(params.capacity));
+		infol(cpu_mem, "[%s] reserved %.2lf Kb", out->name.data, as_Kb(params.capacity));
 	}
 
 	return out;
 }
 
-bool8 arena_is_at(arena *arena, void *ptr)
+b8 arena_is_at(arena *arena, void *ptr)
 {
 	return (void*)(arena->mem + arena->current) == ptr;
 }
@@ -62,15 +55,15 @@ scratch scratch_begin(arena *arena)
 	return (scratch){ .arena = arena, .point = arena->current };
 }
 
-void scratch_end(scratch scratch)
+void scratch_end(scratch s)
 {
-	assert(scratch.arena->current >= scratch.point);
-	scratch.arena->current = scratch.point;	
+	dbg_verify(s.arena->current >= s.point);
+	s.arena->current = s.point;	
 }
 
-void *arena_push_unzeroed(arena *arena, u64 size, u64 alignment)
+void *arena_push_bytes_unzeroed(arena *arena, u64 size, u64 alignment)
 {		
-	ptr unaligned_current = (ptr)(arena->mem + arena->current);
+	uptr unaligned_current = (uptr)(arena->mem + arena->current);
 	u64 align_offset = (u64)(((unaligned_current + (alignment - 1)) & ~(alignment - 1)) - unaligned_current);
 	u64 new_current = arena->current + align_offset + size;
 
@@ -127,9 +120,9 @@ void arena_reset_and_decommit(arena *arena)
 	arena->current = 0;
 }
 
-void *arena_push(arena *arena, u64 size, u64 alignment, bool8 zero)
+void *arena_push_bytes(arena *arena, u64 size, u64 alignment, b8 zero)
 {		
-	u8 *out = arena_push_unzeroed(arena, size, alignment);
+	u8 *out = arena_push_bytes_unzeroed(arena, size, alignment);
 	if(zero) { memset(out, 0, size); }
 	return out;
 }

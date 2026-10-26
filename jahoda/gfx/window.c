@@ -1,32 +1,102 @@
 #include "window.h"
-#include <assert.h>
+#include "gpu_glfw.h"
 
-window window_make_(window_params params)
+void glfw_kb_callback(GLFWwindow* handle, int key, int scancode, int action, int mods)
 {
-	// if(!params.glfw_ctx->initialized)
-	// {
-	// 	fprintf(stderr, "glfw_context is not initialized");
-	// 	return (window){0};
-	// }
+	window *win = (window*)glfwGetWindowUserPointer(handle);
+	win->callback.key_fn(win, win->callback.arg, key, scancode, action, mods);
+}
 
-	char namebuf[window_name_max_len] = {0};
-	memcpy(namebuf, params.title.data, params.title.len);
-
+window *window_make_(window_params params)
+{	
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-	
-	// @explain: window is blank for few hundred milliseconds before everything else is initialized, and its looks ugly, 
-	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-	
-	window out = {
-		.handle = glfwCreateWindow(params.width, params.height, namebuf, NULL, NULL), 
-		.width = params.width, 
-		.height = params.height, 
-		.fullscreen = params.fullscreen
-	};
 
+	GLFWwindow *handle = NULL;
+
+	if(params.fullscreen)
+	{
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);		
+
+		handle = glfwCreateWindow(mode->width, mode->height, params.title.data, monitor, NULL);		
+	}
+	else {
+		handle = glfwCreateWindow(params.size.x, params.size.y, params.title.data, NULL, NULL);
+		glfwSetWindowMonitor(handle, NULL, params.pos.x, params.pos.y, params.size.x, params.size.y, 0);
+	}
+
+	
+	if(params.invisible)
+	{
+		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+	}
+	
+	if (glfwRawMouseMotionSupported()) 
+	{
+        glfwSetInputMode(handle, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
+	else 
+	{
+		warnl(glfw, "raw mouse motion is not supported");	
+	}
+
+	window *out = arena_push(
+		params.mem, 
+		(window){
+			.handle = handle,
+			._last_pos = params.pos,
+			._last_size = params.size, 
+			.fullscreen = params.fullscreen,
+			.callback = { 
+				.key_fn = params.callback.key_fn,
+				.arg = params.callback.arg,
+			}
+		}
+	);
+	
+	if(params.callback.key_fn)
+	{
+		glfwSetKeyCallback(out->handle, glfw_kb_callback);
+		glfwSetWindowUserPointer(out->handle, out);
+	}
 
 	return out;
+}
+
+void window_toggle_fullscreen(window *win)
+{
+	if(win->fullscreen)
+	{						
+		glfwSetWindowMonitor(
+			win->handle,
+			NULL, 
+			win->_last_pos.x, win->_last_pos.y, 
+			win->_last_size.x, win->_last_size.y, 
+			0
+		);
+		
+		win->fullscreen = false;
+	}
+	else 
+	{	
+		glfwGetWindowSize(win->handle, &win->_last_size.x, &win->_last_size.y);
+		glfwGetWindowPos(win->handle, &win->_last_pos.x, &win->_last_pos.y);
+	
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		
+		glfwSetWindowMonitor(
+			win->handle, 
+			monitor, 
+			0,0 , 
+			mode->width, mode->height, 
+			mode->refreshRate
+		);
+
+		win->fullscreen = true;
+	}
 }
 
 void window_make_visible(window *win)
@@ -36,38 +106,53 @@ void window_make_visible(window *win)
 
 void window_release(window *win)
 {
-	assert(win->handle);
+	dbg_verify(win->handle);
 
     glfwDestroyWindow(win->handle);
 }
 
-bool8 window_should_close(window *win)
+b8 window_should_close(window *win)
 {
-	assert(win->handle);
+	dbg_verify(win->handle);
 
 	return glfwWindowShouldClose(win->handle);
 }
 
-bool8 window_is_minimized(window *win)
+b8 window_is_minimized(window *win)
 {
     return glfwGetWindowAttrib(win->handle, GLFW_ICONIFIED) != 0;
 }
 
-bool8 window_mouse_button_down(window *win, int button)
+b8 window_mouse_button_down(window *win, int button)
 {
 	return glfwGetMouseButton(win->handle, button) == GLFW_PRESS;
 }
 
-vec2_f64 window_mouse_pos(window *win)
+b8 window_key_just_pressed(window *win, int button)
 {
-	vec2_f64 pos;
-	glfwGetCursorPos(win->handle, &pos.x, &pos.y);
-	return pos;
+	return win->keys_pressed[button];
+}
+
+b8 window_key_down(window *win, int button)
+{
+	return glfwGetKey(win->handle, button) == GLFW_PRESS;
+}
+
+vec2_f32 window_mouse_pos(window *win)
+{
+	vec2_f64 proxy;
+	glfwGetCursorPos(win->handle, &proxy.x, &proxy.y);
+	return (vec2_f32){proxy.x, proxy.y};
 }
 
 void window_poll_events(window *win)
 {
-	assert(win->handle);
+	dbg_verify(win->handle);
 
 	glfwPollEvents();
+}
+
+void window_wait_events(window *win)
+{	
+	glfwWaitEvents();
 }

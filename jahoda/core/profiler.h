@@ -1,48 +1,31 @@
 #ifndef jahoda_profile
 #define jahoda_profile
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <time.h>
-#include "platform_detect.h"
 #include "types.h"
 #include "da.h"
-#include "utils.h"
 
 typedef struct
 {
-	str name;
-	f64 time;
+	text64 name;
+    u64 process_cycles; 
+    i64 start_ticks;
+	f64 time_ms;
 } profile_entry;
 
-da_declare(profile_entry, profiler);
-#ifdef jahoda_platform_windows
-#include <windows.h> 
-#define profile_impl(arena, profiler, pname, ...)\
-    LARGE_INTEGER pname##_freq, pname##_begin, pname##_end; \
-    QueryPerformanceFrequency(&pname##_freq); \
-    QueryPerformanceCounter(&pname##_begin); \
-    da_append(arena, profiler, (profile_entry){.name = str_from_fmt(arena, __VA_ARGS__)}); \
-    profile_entry *pname##entry = da_last(profiler); \
-    for(u32 pname##i = 0; \
-        pname##i < 1; \
-        QueryPerformanceCounter(&pname##_end), \
-        pname##entry->time = (f64)(pname##_end.QuadPart - pname##_begin.QuadPart) / (f64)pname##_freq.QuadPart, \
-        ++pname##i)
-#else
-#define profile(arena, profiler, ...) while(0)
-#endif
+#define profile_fmt "[%s] %*s %.2lf ms, %llu cpuc"
+#define profile_arg(prf) (prf)->name.data, (i32)(sizeof((prf)->name) - strlen((prf)->name.data) - 1), "",(prf)->time_ms, (prf)->process_cycles
+
+profile_entry profile_begin(text64 name);
+void profile_end(profile_entry *prf);
+
+da_declare(profile_entry, profile_da);
 
 
+#define profile(arena, da, ...)\
+    for(profile_entry *_prf = da_append(arena, da, profile_begin(arena, text32_make(__VA_ARGS__))); _prf.start_ticks; profile_end(_prf))
 
-
-#define profile_trampoline(arena, profiler, pname, ...) profile_impl(arena, profiler, pname, __VA_ARGS__)
-#define profile(arena, profiler, ...) profile_trampoline(arena, profiler, concat(_prf_, __COUNTER__), __VA_ARGS__)
-
-
+#define profile_imm(...)\
+    for(profile_entry _prf = profile_begin(text64_make(__VA_ARGS__)); (_prf.start_ticks || (msgl(profile, profile_fmt, profile_arg(&_prf)), 0)); profile_end(&_prf))
 
 
 #endif
-
-

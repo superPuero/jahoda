@@ -3,3 +3,5 @@
 *.exe
 *.o
 .vscode
+logs/
+compile_flags.txt

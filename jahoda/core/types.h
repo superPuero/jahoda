@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef uint8_t u8;
 typedef int8_t i8;
@@ -23,11 +23,11 @@ typedef double f64;
 
 typedef size_t uz;
 typedef ptrdiff_t iz;
-typedef uintptr_t ptr;
+typedef uintptr_t uptr;
 
-typedef u8 bool8;
-
-#define true 1
-#define false 0
+typedef u8 b8;
+typedef u16 b16;
+typedef u32 b32;
+typedef u64 b64;
 
 #endif

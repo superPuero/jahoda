@@ -13,12 +13,12 @@ f64 *mat_f64_at(mat_f64* mat, uz x, uz y)
     return &mat_f64_uat(mat, x, y);
 }
 
-bool8 mat_f64_dot_compatible(const mat_f64 *mat1, const mat_f64 *mat2)
+b8 mat_f64_dot_compatible(const mat_f64 *mat1, const mat_f64 *mat2)
 {
     return mat1->columns == mat2->rows;
 }
 
-bool8 mat_f64_comatible(const mat_f64 *mat1, const mat_f64 *mat2)
+b8 mat_f64_comatible(const mat_f64 *mat1, const mat_f64 *mat2)
 {
     return mat1->columns == mat2->columns && mat1->rows == mat2->rows;
 }
@@ -35,10 +35,10 @@ void mat_f64_dump(const mat_f64 *mat)
     }
 }
 
-mat_f64 mat_f64_make(arena *mem, uz rows, uz columns, bool8 zero)
+mat_f64 mat_f64_make(arena *mem, uz rows, uz columns, b8 zero)
 {    
     return (mat_f64){
-        .data = arena_push(mem, rows * columns * sizeof(f64), jahoda_alignof(f64), zero), 
+        .data = arena_push_bytes(mem, rows * columns * sizeof(f64), alignof(f64), zero), 
         .rows = rows,
         .columns = columns
     }; 
@@ -352,7 +352,7 @@ mat_f64 mat_f64_load_from_file(arena *mem, FILE *file)
     fread(&out.rows, sizeof(out.rows), 1, file);
     fread(&out.columns, sizeof(out.columns), 1, file);
 
-    out.data = arena_push(mem, out.rows * out.columns * sizeof(f64), jahoda_alignof(f64),  false);
+    out.data = arena_push_bytes(mem, out.rows * out.columns * sizeof(f64), alignof(f64),  false);
     fread(out.data, sizeof(f64), out.rows * out.columns, file);
 
     return out;

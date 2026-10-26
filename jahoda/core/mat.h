@@ -14,10 +14,10 @@ typedef struct
 #define mat_f64_uat(mat, x, y) (mat)->data[x  * (mat)->columns + y]
 f64 *mat_f64_at(mat_f64* mat, uz x, uz y);
 
-bool8 mat_f64_dot_compatible(const mat_f64 *mat1, const mat_f64 *mat2);
-bool8 mat_f64_comatible(const mat_f64 *mat1, const mat_f64 *mat2);
+b8 mat_f64_dot_compatible(const mat_f64 *mat1, const mat_f64 *mat2);
+b8 mat_f64_comatible(const mat_f64 *mat1, const mat_f64 *mat2);
 
-mat_f64 mat_f64_make(arena *mem, uz rows, uz columns, bool8 zero);
+mat_f64 mat_f64_make(arena *mem, uz rows, uz columns, b8 zero);
 mat_f64 mat_f64_make_rand(arena *mem, uz rows, uz columns, f64 from, f64 to);
 mat_f64 mat_f64_make_identity(arena *mem, uz extent);
 mat_f64 mat_f64_copy(arena *mem, const mat_f64 *mat);

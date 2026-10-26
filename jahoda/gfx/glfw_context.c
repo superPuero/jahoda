@@ -1,26 +1,17 @@
 #include "glfw_context.h"
+#include "gpu_glfw.h"
 
 glfw_context glfw_context_make()
 {
-	glfw_context ctx = {0};
-	ctx.initialized = glfwInit();
+	glfwInit();   
+    
+    verifyl(glfw, glfwInit(), "initialization failed");
+    verifyl(glfw, glfwVulkanSupported(), "vulkan is not supported");
 
-	if(!ctx.initialized)
-    {
-        fprintf(stderr, "Failed to initialize GLFW\n");
-    }
-
-	if(!glfwVulkanSupported())
-    {
-        fprintf(stderr, "Vulkan is not supported on this machine\n");
-        glfw_context_release(false);
-    }
-
-	return ctx;
+	return (glfw_context){};
 }
 
 void glfw_context_release(glfw_context *ctx)
 {
 	glfwTerminate();
-	ctx->initialized = false;
 }
