@@ -30,8 +30,7 @@ typedef struct {} dude;
 typedef struct {} camera_controller;
  
 typedef struct { render_mesh_id mesh_id; } static_mesh;
-typedef struct { render_mesh_id mesh_id; } volatile_mesh;
-
+typedef struct { render_mesh_id mesh_id; } dynamic_mesh;
 
 #define ent_spec basic
 #define ent_max_children 128
@@ -41,7 +40,7 @@ typedef struct { render_mesh_id mesh_id; } volatile_mesh;
     X(camera_controller)\
     X(dude)\
     X(static_mesh)\
-    X(volatile_mesh)
+    X(dynamic_mesh)
 
 #include <jahoda/meta/ent.h>
 
@@ -189,7 +188,7 @@ static texture_memory_entry swpc_texture_memory_entries[] = {
 typedef enum
 {
     render_geometry_type_static_opaque,
-    render_geometry_type_volatile_opaque,
+    render_geometry_type_dynamic_opaque,
     render_geometry_type_count
 } render_geometry_type;
 
@@ -248,7 +247,7 @@ internal struct
     render_batch static_opaque_batches[frames_in_flight];  
     u32 static_mesh_frames_to_collect;
     
-    render_batch volatile_opaque_batches[frames_in_flight];   
+    render_batch dynamic_opaque_batches[frames_in_flight];   
 
     struct
     {
@@ -327,10 +326,10 @@ void key_cb(window *win, void* arg, int key, int scancode, int action, int mods)
     }
 }
 
-void ent_put_node( basic_ent_manager *manager, basic_ent_id ent, render_manager *rmanager, render_primitive_node *node, bool static_)
+void spawn_model_node(basic_ent_manager *manager, basic_ent_id parent, render_primitive_node *node, bool dynamic)
 {
     basic_ent_id node_ent = ent_spawn(manager);
-    ent_add_relation(manager, ent, node_ent);
+    ent_add_relation(manager, parent, node_ent);
     ent_add_transform(manager, node_ent);
     *ent_get(manager, node_ent, local_transform) = local_transform_from_mat(&node->local_transform);
 
@@ -341,31 +340,26 @@ void ent_put_node( basic_ent_manager *manager, basic_ent_id ent, render_manager 
         basic_ent_id prim_ent = ent_spawn(manager);        
         ent_add_relation(manager, node_ent, prim_ent);
         ent_add_transform(manager, prim_ent);
-        if(static_)
-        {
-            ent_add(manager, prim_ent, static_mesh, {primitive->mesh_id});
-        }
-        else
-        {
-            ent_add(manager, prim_ent, volatile_mesh, {primitive->mesh_id});
-        }       
+
+        if(dynamic) ent_add(manager, prim_ent, dynamic_mesh, { primitive->mesh_id });
+        else        ent_add(manager, prim_ent, static_mesh,  { primitive->mesh_id });
     }
         
     for each_index(node_id, node->node_count)
     {
-        render_primitive_node *node_ = node->nodes + node_id;
-        ent_put_node(manager, node_ent, rmanager, node_, static_);
+        render_primitive_node *child_node = node->nodes + node_id;
+        spawn_model_node(manager, node_ent, child_node, dynamic);
     }
 }
 
-
-#define ent_add_model(manager, id, render_manager, model, static) ({\
-    for each_index(node_id, (render_manager)->models[model].node_count)\
-    {\
-        render_primitive_node *node = (render_manager)->models[model].nodes + node_id;\
-        ent_put_node(manager, id, render_manager, node, static);\
-    }\
-})
+void spawn_model(basic_ent_manager *manager, render_manager *rmanager, render_model_id model_id, basic_ent_id target, b8 dynamic)
+{
+    for each_index(node_id, rmanager->models[model_id].node_count)
+    {
+        render_primitive_node *node = rmanager->models[model_id].nodes + node_id;
+        spawn_model_node(manager, target, node, dynamic);
+    }
+}
 
 void refresh_swapchain_targets()
 {
@@ -499,8 +493,8 @@ void env_init_full_viewports(u32 count)
             .instance_count = 103 * env.args.obj_grid_size * env.args.obj_grid_size
         );
 
-        env.volatile_opaque_batches[i] = render_batch_make(
-            .tag = text128_make("env.volatile_opaque_batches[%u]", i), 
+        env.dynamic_opaque_batches[i] = render_batch_make(
+            .tag = text128_make("env.dynamic_opaque_batches[%u]", i), 
             .manager = &env.main_render_manager, 
             .gpu = &env.gpu,  
             .any_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_ssbo],        
@@ -521,10 +515,10 @@ void env_init_full_viewports(u32 count)
                 .mem = env.static_memory
             );
     
-            env.full_viewports[viewport_id].commands[render_geometry_type_volatile_opaque][i] = render_command_make(
+            env.full_viewports[viewport_id].commands[render_geometry_type_dynamic_opaque][i] = render_command_make(
                 .manager = &env.main_render_manager,
-                .batch = &env.volatile_opaque_batches[i], 
-                .tag =  text128_make("env.full_volatile_opaque_view[%u]", i), 
+                .batch = &env.dynamic_opaque_batches[i], 
+                .tag =  text128_make("env.full_dynamic_opaque_view[%u]", i), 
                 .local_indirect_command_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_local_indirect_ssbo_dst],
                 .coherent_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_ssbo],                
                 .local_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_local_ssbo_dst],
@@ -556,11 +550,11 @@ void spawn_scene(basic_ent_manager *manager, render_manager *rmanager, render_mo
         {
             basic_ent_id obj = ent_spawn(manager);
 
-            b8 is_static = obj % 2;
-            if(!is_static)
+            b8 is_dynamic = obj % 2;
+            if(is_dynamic)
             {
                 ent_add(manager, obj, dude, {});                             
-                ent_name_set(manager, obj, "volatile_obj : %u", obj);
+                ent_name_set(manager, obj, "dynamic_obj : %u", obj);
             }              
             else
             {
@@ -571,13 +565,13 @@ void spawn_scene(basic_ent_manager *manager, render_manager *rmanager, render_mo
                 .rot = {0,0,0}
             );                
             
-            ent_add_model(manager,  obj, rmanager, model, is_static);
+            spawn_model(manager, rmanager, model, obj, is_dynamic);
         }
     }
 
     msg("ent count = %u", manager->active_count);
     msg("ent count (static_mesh) = %u", ent_table_entries(manager, static_mesh));
-    msg("ent count (volatile_mesh) = %u", ent_table_entries(manager, volatile_mesh));
+    msg("ent count (dynamic_mesh) = %u", ent_table_entries(manager, dynamic_mesh));
     msg("ent count (ent_root) = %u", ent_table_entries(manager, ent_root));
 }   
 
@@ -688,7 +682,7 @@ void env_release()
     arena_release(env.static_memory);
 }
 
-void collect_volatile_mesh(
+void collect_dynamic_mesh(
     gpu_context *gpu,  
     render_batch batches per_frame_in_flight,
     basic_ent_manager *entities)
@@ -697,13 +691,13 @@ void collect_volatile_mesh(
     
     basic_ent_query q = ent_query_make(            
         entities,
-        .include_mask = ent_bitmask_make(entities, volatile_mesh)
+        .include_mask = ent_bitmask_make(entities, dynamic_mesh)
     );
 
     while(ent_query_next(&q))
     {                        
-        u32 local_geometry_id = ent_local_id(entities, q.id, volatile_mesh);
-        render_mesh_id mesh_id = ent_get(entities, q.id, volatile_mesh)->mesh_id;
+        u32 local_geometry_id = ent_local_id(entities, q.id, dynamic_mesh);
+        render_mesh_id mesh_id = ent_get(entities, q.id, dynamic_mesh)->mesh_id;
 
         ((render_transform*)batch->transform_buffer->mem)[local_geometry_id].mat = ent_get(entities, q.id, global_transform)->mat;
         ((render_mesh_id*)batch->mesh_id_buffer->mem)[local_geometry_id] = mesh_id;
@@ -1127,11 +1121,11 @@ void collect_geometry_record(VkCommandBuffer cmd)
         env.static_mesh_frames_to_collect--;
     }
 
-    cpu_n_gpu_profile_scope(cmd, "collect_volatile_mesh")
+    cpu_n_gpu_profile_scope(cmd, "collect_dynamic_mesh")
     {
-        collect_volatile_mesh(
+        collect_dynamic_mesh(
             &env.gpu, 
-            env.volatile_opaque_batches,
+            env.dynamic_opaque_batches,
             &env.ent_manager
         );
     }
