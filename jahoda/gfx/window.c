@@ -138,11 +138,11 @@ b8 window_key_down(window *win, int button)
 	return glfwGetKey(win->handle, button) == GLFW_PRESS;
 }
 
-vec2_f32 window_mouse_pos(window *win)
+vec2_f64 window_mouse_pos(window *win)
 {
-	vec2_f64 proxy;
-	glfwGetCursorPos(win->handle, &proxy.x, &proxy.y);
-	return (vec2_f32){proxy.x, proxy.y};
+	vec2_f64 out;
+	glfwGetCursorPos(win->handle, &out.x, &out.y);
+	return out;
 }
 
 void window_poll_events(window *win)

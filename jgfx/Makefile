@@ -11,13 +11,6 @@ include assets/shaders/compile_shaders.mk
 
 TARGET = jgfx
 
-ifeq ($(nocon), true)
-	ifeq ($(PLATFORM), window)
-		CC_FLAGS += -mwindows
-	endif
-	CC_FLAGS += -Djahoda_nocon
-endif
-
 debug: CC_FLAGS += $(CC_DEBUG_FLAGS)
 debug: basic_build
 

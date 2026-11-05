@@ -32,7 +32,7 @@ typedef struct
 #define arena_fpush_arr(arena, type, size) arena_push_bytes(arena, sizeof(type) * size, alignof(type), false)
 #define arena_fpush(arena, type) arena_fpush_arr(arena, type, 1)
 #define arena_push(arena, ...) ({ \
-    typeof(__VA_ARGS__)* _ptr = (typeof(__VA_ARGS__)*)arena_fpush(arena, typeof(__VA_ARGS__)); \
+    typeof(__VA_ARGS__)* _ptr = (typeof(__VA_ARGS__)*)arena_ppush(arena, typeof(__VA_ARGS__)); \
     *_ptr = (typeof(__VA_ARGS__))__VA_ARGS__; \
     _ptr; \
 })
@@ -101,7 +101,7 @@ static inline void pool_type##_remove(pool_type *pool, type *value)\
 {\
 	pool->free_list[pool->free_list_occupied++] = (u32)(value - pool->mem);\
 }
-
+ 
 
 
 #endif

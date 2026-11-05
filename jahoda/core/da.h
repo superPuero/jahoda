@@ -24,7 +24,7 @@ struct\
 }
 
 #define da_declare(data_type, da_type) typedef da(data_type) da_type;
-#define sda_declare(data_type, size, da_type) typedef sda(data_type, size) da_type;
+#define 	sda_declare(data_type, size, da_type) typedef sda(data_type, size) da_type;
 
 #define da_reserve_unchecked(arr, arena, amount)({\
 	uz elem_size = sizeof((arr)->data[0]);\
@@ -86,12 +86,12 @@ do{\
 	index;\
 })
 
-#define da_if_find(arr, val, out) for (u32 out = da_find(arr, val); out != (arr)->occupied;)
+#define da_if_find(arr, val, out) for (u32 out = da_find(arr, val); out != (arr)->occupied;) if(out && out != (arr)->occupied)
 
 #define da_has(arr, val) (da_find(arr, val) != (arr)->occupied)
 
 #define sda_append(arr, ...)({\
-	dbg_verify(arrsize((arr)->data) != (arr)->occupied, "sda overflow");\
+	dbg_verify(arrlen((arr)->data) != (arr)->occupied, "sda overflow");\
 	(arr)->data[(arr)->occupied] = (typeof(*(arr)->data))__VA_ARGS__;\
 	((typeof(*(arr)->data)*)(arr)->data) + (arr)->occupied++;\
 })

@@ -112,7 +112,7 @@ void gpu_context_set_present_mode(gpu_context *gpu, VkPresentModeKHR present_mod
 	}	
 }
 
-b8 gpu_context_try_begin_frame(gpu_context *gpu, window *win, arena *temp_mem)
+void gpu_context_drain(gpu_context *gpu)
 {
 	vkWaitForFences(
 		gpu->device.handle, 
@@ -124,7 +124,10 @@ b8 gpu_context_try_begin_frame(gpu_context *gpu, window *win, arena *temp_mem)
 
 	gpu->commited_graphics_count[gpu->frame_index] = 0;
 	gpu->next_graphics_buffer[gpu->frame_index] = 0;
-	
+}
+
+b8 gpu_context_try_begin_frame(gpu_context *gpu, window *win, arena *temp_mem)
+{
 	if(gpu->swapchain_was_refreshed)
 	{
 		gpu->swapchain_was_refreshed = false;
@@ -171,7 +174,7 @@ b8 gpu_context_try_begin_frame(gpu_context *gpu, window *win, arena *temp_mem)
 	} 
 }
 
-void gpu_context_end_frame(gpu_context *gpu, arena *temp_mem)
+void gpu_context_end_and_present_frame(gpu_context *gpu, arena *temp_mem)
 {
 	VkSubmitInfo submit_info = { 0 };
 	u32 mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;

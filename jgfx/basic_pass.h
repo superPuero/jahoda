@@ -57,7 +57,7 @@ static inline void pass_name##_record(\
                 u8,\
                 .arena = coherent_descriptor_buffer_arena,\
                 .device = &gpu->device,\
-                .tag = text128_make("deferred_light_pass.descriptor_buffer[%u]", i),\
+                .tag = text128_make(#pass_name".descriptor_buffer[%u]", i),\
                 .size = pass->render_state.descriptor_layout_size\
             );\
         \

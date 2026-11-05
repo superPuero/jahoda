@@ -2,17 +2,41 @@
 #include <jahoda/core/thread_pool.h>
 #include <jahoda/gfx/window.h>
 #include <jahoda/gfx/gpu_context.h>
+#include <jahoda/gfx/gpu_profiler.h>
 #include <jahoda/gfx/present_pass.h>
 #include <jahoda/gfx/render_manager.h>
 #include <jahoda/base/tick_info.h>
 #include <jahoda/core/os.h>
 #include <jahoda/core/tmap.h>
 
+#include "transform.h"
 #include "depth_pass.h"
 #include "gbuffer_pass.h"
 #include "deferred_light_pass.h"
-#include "ent.h"
 #include "basic_pass.h"
+
+typedef struct {} dude;
+typedef struct {} camera_controller;
+ 
+typedef struct { render_mesh_id mesh_id; } static_mesh;
+typedef struct { render_mesh_id mesh_id; } volatile_mesh;
+
+
+#define ent_spec basic
+#define ent_max_children 128
+#define ent_tables\
+    X(local_transform)\
+    X(global_transform)\
+    X(camera_controller)\
+    X(dude)\
+    X(static_mesh)\
+    X(volatile_mesh)
+
+#include "ent.h"
+
+#define ent_add_transform(manager, id, ...)\
+ent_add(manager, id, local_transform, {.scale = {1,1,1}, __VA_ARGS__});\
+ent_add(manager, id, global_transform, {})\
 
 typedef struct
 {
@@ -22,7 +46,7 @@ typedef struct
     f32 scanline_weight; 
     f32 mask_strength;   
     f32 aberration;      
-    f32 bloom_boost
+    f32 bloom_boost;
 } crt_params;
 
 static crt_params crt_params_default = {
@@ -128,7 +152,7 @@ typedef struct
     u64 capacity;
 } texture_memory_entry;
 
-static buffer_memory_entry scene_bound_buffer_memory_entries[] = {
+static buffer_memory_entry sc_buffer_memory_entries[] = {
     { .kind = buffer_memory_kind_coherent_ssbo, .capacity = Mb(32) },
     { .kind = buffer_memory_kind_local_ssbo_dst, .capacity = Mb(32) },
     { .kind = buffer_memory_kind_local_indirect_ssbo_dst, .capacity = Mb(2) },
@@ -139,14 +163,14 @@ static buffer_memory_entry temp_buffer_memory_entries[] = {
     { .kind = buffer_memory_kind_coherent_src, .capacity = Mb(32) }
 };
 
-static buffer_memory_entry frame_deferred_buffer_memory_entreis[] = {
+static buffer_memory_entry fd_buffer_memory_entreis[] = {
     { .kind = buffer_memory_kind_coherent_src, .capacity = Mb(32) }
 };
 
-static buffer_memory_entry swapchain_bound_buffer_memory_entries[] = {
+static buffer_memory_entry swpc_buffer_memory_entries[] = {
 };
 
-static texture_memory_entry swapchain_bound_texture_memory_entries[] = {
+static texture_memory_entry swpc_texture_memory_entries[] = {
     { .kind = texture_memory_kind_local_sampled_r8g8b8a8, .capacity = Mb(128)},
     { .kind = texture_memory_kind_local_sampled_d32, .capacity = Mb(128)}
 };
@@ -189,23 +213,27 @@ typedef struct
 } render_depth_only_viewport;
 
 internal struct
-{
+{    
 	arena *static_memory;
 	arena *temp_memory;
     arena *scene_memory;
 
     thread_pool *main_thread_pool;	    
 	b8 exit;
-	glfw_context glfw_ctx;
-	window *win;
+	glfw_context glfw_ctx;	
+    window *win;
 	tick_info tick_info;
+    profiler prf;
 	gpu_context gpu;
-        
-    ent_manager ent_manager;
+    gpu_profiler gpu_prf;
+    basic_ent_manager ent_manager;
+
+    vec2_f64 last_mouse_pos;
+    b8 mouse_captured;
 
     render_manager main_render_manager;
     render_batch static_opaque_batches[frames_in_flight];  
-    u32 static_geometry_frames_to_collect;
+    u32 static_mesh_frames_to_collect;
     
     render_batch volatile_opaque_batches[frames_in_flight];   
 
@@ -220,22 +248,24 @@ internal struct
     u32 full_viewport_count;
     render_full_viewport *full_viewports;
     u32 main_full_viewport_id;
-    
+    render_color_target present_target;
+
     struct
     {
-        gpu_buffer_arena *frame_deferred_buffer[frames_in_flight][buffer_memory_kind_count];
+        gpu_buffer_arena *fd_buffer[frames_in_flight][buffer_memory_kind_count];
         gpu_buffer_arena *temp_buffer[buffer_memory_kind_count];
-        gpu_buffer_arena *scene_bound_buffer[buffer_memory_kind_count];
-        gpu_buffer_arena *swapchain_bound_buffer[buffer_memory_kind_count];
+        gpu_buffer_arena *sc_buffer[buffer_memory_kind_count];
+        gpu_buffer_arena *swpc_buffer[buffer_memory_kind_count];
 
-        gpu_texture_arena *swapchain_bound_texture[texture_memory_kind_count];
+        gpu_texture_arena *swpc_texture[texture_memory_kind_count];
     } gpu_memory;
-
-    f64 last_mouse_x;
-    f64 last_mouse_y;
-    b8 mouse_captured;
-    b8 not_first_mouse;
 } env;
+
+#define cpu_n_gpu_profile_scope(cmd, ...)\
+    for(struct { profile_scope *cpu_scope; u32 gpu_scope_id; } _prf_scopes = { profiler_scope_begin(&env.prf, text64_make(__VA_ARGS__)), gpu_profiler_scope_begin(&env.gpu_prf, &env.gpu, cmd, text64_make(__VA_ARGS__)) + 1 }; \
+        _prf_scopes.gpu_scope_id; \
+        _prf_scopes.gpu_scope_id = (gpu_profiler_scope_end(&env.gpu_prf, &env.gpu, cmd, _prf_scopes.gpu_scope_id - 1), profiler_scope_end(_prf_scopes.cpu_scope), 0))
+
 
 void key_cb(window *win, void* arg, int key, int scancode, int action, int mods)
 {
@@ -246,6 +276,10 @@ void key_cb(window *win, void* arg, int key, int scancode, int action, int mods)
             if(key == GLFW_KEY_F11)
             {
                 window_toggle_fullscreen(win);
+            }
+            else if(key == GLFW_KEY_Z)
+            {
+                env.present_target = (env.present_target + 1) % render_color_target_count;
             }
             else if(key == GLFW_KEY_Q)
             {
@@ -268,68 +302,55 @@ void key_cb(window *win, void* arg, int key, int scancode, int action, int mods)
                 env.mouse_captured = !env.mouse_captured;
                 if(env.mouse_captured)
                 {
-                    glfwSetInputMode(win->handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                    env.not_first_mouse = false;
+                    glfwSetInputMode(win->handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);                
                 }
                 else
                 {
                     glfwSetInputMode(win->handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 }
-            }
+            }                        
             break;
         }
     }
 }
 
-void ent_put_node( ent_manager *emanager, ent_id ent, render_manager *rmanager, render_primitive_node *node, bool static_)
+void ent_put_node( basic_ent_manager *manager, basic_ent_id ent, render_manager *rmanager, render_primitive_node *node, bool static_)
 {
-    ent_session(emanager)
+    basic_ent_id node_ent = ent_spawn(manager);
+    ent_add_relation(manager, ent, node_ent);
+    ent_add_transform(manager, node_ent);
+    *ent_get(manager, node_ent, local_transform) = local_transform_from_mat(&node->local_transform);
+
+    for each_index(primitive_id, node->primitive_count)
     {
-        ent_id e = ent_spawn_with(
-            ent_with_parent(ent);
-            
-            ent_with_transform_v(
-                local_transform_from_mat(&node->local_transform)
-            );
+        render_primitive *primitive = node->primitives + primitive_id;
 
-            for each_index(primitive_id, node->primitive_count)
-            {
-                render_primitive *primitive = node->primitives + primitive_id;
-                
-                ent_with_children(
-                    ent_spawn_with(
-                        ent_with_v(render_mesh_id, primitive->mesh_id);
-
-                        if(static_)
-                        {
-                            ent_with(static_geometry);
-                        }
-                        else
-                        {
-                            ent_with(volatile_geometry);
-                        }
-
-                        ent_with_transform();                    
-                    )
-                );                    
-            }
-        );
-
-        
-        for each_index(node_id, node->node_count)
+        basic_ent_id prim_ent = ent_spawn(manager);        
+        ent_add_relation(manager, node_ent, prim_ent);
+        ent_add_transform(manager, prim_ent);
+        if(static_)
         {
-            render_primitive_node *node_ = node->nodes + node_id;
-            ent_put_node(emanager, e, rmanager, node_, static_);
+            ent_add(manager, prim_ent, static_mesh, {primitive->mesh_id});
         }
+        else
+        {
+            ent_add(manager, prim_ent, volatile_mesh, {primitive->mesh_id});
+        }       
+    }
+        
+    for each_index(node_id, node->node_count)
+    {
+        render_primitive_node *node_ = node->nodes + node_id;
+        ent_put_node(manager, node_ent, rmanager, node_, static_);
     }
 }
 
 
-#define ent_with_model(render_manager, model, static) ({\
+#define ent_add_model(manager, id, render_manager, model, static) ({\
     for each_index(node_id, (render_manager)->models[model].node_count)\
     {\
         render_primitive_node *node = (render_manager)->models[model].nodes + node_id;\
-        ent_put_node(_session_ent_manager, _session_ent, render_manager, node, static);\
+        ent_put_node(manager, id, render_manager, node, static);\
     }\
 })
 
@@ -340,7 +361,7 @@ void refresh_swapchain_targets()
         for each_index(vp_id, env.full_viewport_count)
         {
             env.full_viewports[vp_id].depth[i] = gpu_texture_arena_push(
-                .arena = env.gpu_memory.swapchain_bound_texture[texture_memory_kind_local_sampled_d32], 			
+                .arena = env.gpu_memory.swpc_texture[texture_memory_kind_local_sampled_d32], 			
                 .tag = text128_make("viewports[%zu].depth[%zu]", vp_id, i),			
                 .device = &env.gpu.device, 
                 .extent = { env.gpu.swapchain.extent.width, env.gpu.swapchain.extent.height, 1 }, 			
@@ -349,7 +370,7 @@ void refresh_swapchain_targets()
             for each_index(target_id, render_color_target_count)
             {
                 env.full_viewports[vp_id].color_target[target_id][i] = gpu_texture_arena_push(
-                    .arena = env.gpu_memory.swapchain_bound_texture[texture_memory_kind_local_sampled_r8g8b8a8], 					
+                    .arena = env.gpu_memory.swpc_texture[texture_memory_kind_local_sampled_r8g8b8a8], 					
                     .tag = text128_make("viewports[%zu].[%u][%zu]", vp_id, target_id, i),			
                     .device = &env.gpu.device, 
                     .extent = { env.gpu.swapchain.extent.width, env.gpu.swapchain.extent.height, 1 }, 			
@@ -361,15 +382,17 @@ void refresh_swapchain_targets()
 
 void env_init_gpu_memory()
 {
+
+
     for each_index(frame_id, frames_in_flight)
     {
-        for each_index(i, arrsize(frame_deferred_buffer_memory_entreis))
+        for each_index(i, arrlen(fd_buffer_memory_entreis))
         {
-            buffer_memory_entry entry = frame_deferred_buffer_memory_entreis[i];
+            buffer_memory_entry entry = fd_buffer_memory_entreis[i];
 
-            env.gpu_memory.frame_deferred_buffer[frame_id][entry.kind] = gpu_buffer_arena_make(
+            env.gpu_memory.fd_buffer[frame_id][entry.kind] = gpu_buffer_arena_make(
                 .mem = env.static_memory,
-                .name = text128_make("frame_deferred_buffer[%u].%s", frame_id, buffer_memory_kind_name[entry.kind]),
+                .name = text128_make("fd_buffer[%u].%s", frame_id, buffer_memory_kind_name[entry.kind]),
                 .device = &env.gpu.device,
                 .capacity = entry.capacity,
                 .usage = buffer_memory_kind_usage[entry.kind],
@@ -378,13 +401,13 @@ void env_init_gpu_memory()
         } 	
     }
 
-    for each_index(i, arrsize(temp_buffer_memory_entries))
+    for each_index(i, arrlen(temp_buffer_memory_entries))
     {        
         buffer_memory_entry entry = temp_buffer_memory_entries[i];
 
         env.gpu_memory.temp_buffer[entry.kind] = gpu_buffer_arena_make(
             .mem = env.static_memory,
-            .name = text128_make("temp.%s", buffer_memory_kind_name[entry.kind]),
+            .name = text128_make("temp_buffer.%s", buffer_memory_kind_name[entry.kind]),
             .device = &env.gpu.device,
             .capacity = entry.capacity,
             .usage = buffer_memory_kind_usage[entry.kind],
@@ -392,13 +415,13 @@ void env_init_gpu_memory()
         ); 	
     }
 
-    for each_index(i, arrsize(scene_bound_buffer_memory_entries))
+    for each_index(i, arrlen(sc_buffer_memory_entries))
     {        
-        buffer_memory_entry entry = scene_bound_buffer_memory_entries[i];
+        buffer_memory_entry entry = sc_buffer_memory_entries[i];
 
-        env.gpu_memory.scene_bound_buffer[entry.kind] = gpu_buffer_arena_make(
+        env.gpu_memory.sc_buffer[entry.kind] = gpu_buffer_arena_make(
             .mem = env.static_memory,
-            .name = text128_make("scene_bound.%s", buffer_memory_kind_name[entry.kind]),
+            .name = text128_make("sc_buffer.%s", buffer_memory_kind_name[entry.kind]),
             .device = &env.gpu.device,
             .capacity = entry.capacity,
             .usage = buffer_memory_kind_usage[entry.kind],
@@ -406,13 +429,13 @@ void env_init_gpu_memory()
         ); 	
     }
 
-    for each_index(i, arrsize(swapchain_bound_buffer_memory_entries))
+    for each_index(i, arrlen(swpc_buffer_memory_entries))
     {        
-        buffer_memory_entry entry = swapchain_bound_buffer_memory_entries[i];
+        buffer_memory_entry entry = swpc_buffer_memory_entries[i];
 
-        env.gpu_memory.swapchain_bound_buffer[entry.kind] = gpu_buffer_arena_make(
+        env.gpu_memory.swpc_buffer[entry.kind] = gpu_buffer_arena_make(
             .mem = env.static_memory,
-            .name = text128_make("scene_bound.%s", buffer_memory_kind_name[entry.kind]),
+            .name = text128_make("swpc_buffer.%s", buffer_memory_kind_name[entry.kind]),
             .device = &env.gpu.device,
             .capacity = entry.capacity,
             .usage = buffer_memory_kind_usage[entry.kind],
@@ -420,13 +443,13 @@ void env_init_gpu_memory()
         ); 	
     }
 
-    for each_index(i, arrsize(swapchain_bound_texture_memory_entries))
+    for each_index(i, arrlen(swpc_texture_memory_entries))
     {
-        texture_memory_entry entry = swapchain_bound_texture_memory_entries[i];
+        texture_memory_entry entry = swpc_texture_memory_entries[i];
 
-        env.gpu_memory.swapchain_bound_texture[entry.kind] = gpu_texture_arena_make(
+        env.gpu_memory.swpc_texture[entry.kind] = gpu_texture_arena_make(
             .mem = env.static_memory,	
-			.name = text128_make("swapchain_bound_texture.%s", texture_memory_kind_name[entry.kind]),
+			.name = text128_make("swpc_texture.%s", texture_memory_kind_name[entry.kind]),
 			.device = &env.gpu.device,			 			
 			.capacity = entry.capacity, 
 			.format = texture_memory_kind_format[entry.kind],
@@ -458,30 +481,29 @@ void env_init_full_viewports(u32 count)
             .tag = text128_make("env.static_opaque_batches[%u]", i), 
             .manager = &env.main_render_manager, 
             .gpu = &env.gpu,  
-            .any_ssbo_arena = env.gpu_memory.scene_bound_buffer[buffer_memory_kind_local_ssbo_dst],
+            .any_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_local_ssbo_dst],
             .mem = env.static_memory,
-            .instance_count = 103 * 15 * 15
+            .instance_count = 103 * 25 * 25
         );
 
         env.volatile_opaque_batches[i] = render_batch_make(
             .tag = text128_make("env.volatile_opaque_batches[%u]", i), 
             .manager = &env.main_render_manager, 
             .gpu = &env.gpu,  
-            .any_ssbo_arena = env.gpu_memory.scene_bound_buffer[buffer_memory_kind_coherent_ssbo],
-            
+            .any_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_ssbo],        
             .mem = env.static_memory,
-            .instance_count = 103 * 15 * 15
+            .instance_count = 103 * 25 * 25
         );
-        
+
         for each_index(viewport_id, env.full_viewport_count)
         {            
             env.full_viewports[viewport_id].commands[render_geometry_type_static_opaque][i] = render_command_make(
-                .tag = text128_make("env.static_opaque_view[%u]", i), 
+                .tag = text128_make("env.full_static_opaque_view[%u]", i), 
                 .manager = &env.main_render_manager,
                 .batch = &env.static_opaque_batches[i], 
-                .local_indirect_command_arena = env.gpu_memory.scene_bound_buffer[buffer_memory_kind_local_indirect_ssbo_dst],
-                .coherent_ssbo_arena = env.gpu_memory.scene_bound_buffer[buffer_memory_kind_coherent_ssbo],                
-                .local_ssbo_arena = env.gpu_memory.scene_bound_buffer[buffer_memory_kind_local_ssbo_dst],
+                .local_indirect_command_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_local_indirect_ssbo_dst],
+                .coherent_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_ssbo],                
+                .local_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_local_ssbo_dst],
                 .gpu = &env.gpu,  
                 .mem = env.static_memory
             );
@@ -489,16 +511,64 @@ void env_init_full_viewports(u32 count)
             env.full_viewports[viewport_id].commands[render_geometry_type_volatile_opaque][i] = render_command_make(
                 .manager = &env.main_render_manager,
                 .batch = &env.volatile_opaque_batches[i], 
-                .tag =  text128_make("env.volatile_opaque_view[%u]", i), 
-                .local_indirect_command_arena = env.gpu_memory.scene_bound_buffer[buffer_memory_kind_local_indirect_ssbo_dst],
-                .coherent_ssbo_arena = env.gpu_memory.scene_bound_buffer[buffer_memory_kind_coherent_ssbo],                
-                .local_ssbo_arena = env.gpu_memory.scene_bound_buffer[buffer_memory_kind_local_ssbo_dst],
+                .tag =  text128_make("env.full_volatile_opaque_view[%u]", i), 
+                .local_indirect_command_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_local_indirect_ssbo_dst],
+                .coherent_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_ssbo],                
+                .local_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_local_ssbo_dst],
                 .gpu = &env.gpu,  
                 .mem = env.static_memory
             );
         }
     }
 }
+
+void spawn_scene(basic_ent_manager *manager, render_manager *rmanager, render_model_id model)
+{   
+    basic_ent_id p = ent_spawn(manager);
+    ent_name_set(manager, p, "player : %u", p);
+    ent_add_transform(manager, p);
+    ent_add(manager, p, camera_controller, {});            
+    
+    for each_index(table_id, manager->table_count)
+    {
+        if(ent_has_from_id(manager, p, table_id))
+        {
+            msg("%s has %s", ent_name(manager, p).data, ent_table_name_from_id(manager, table_id));
+        }
+    }
+
+    u32 obj_grid_size = 25;
+
+    for each_index(x, obj_grid_size)
+    {
+        for each_index(y, obj_grid_size)
+        {
+            basic_ent_id obj = ent_spawn(manager);
+
+            b8 is_static = obj % 2;
+            if(!is_static)
+            {
+                ent_add(manager, obj, dude, {});                             
+                ent_name_set(manager, obj, "volatile_obj : %u", obj);
+            }              
+            else
+            {
+                ent_name_set(manager, obj, "static_obj : %u", obj);
+            }    
+            ent_add_transform(manager, obj,
+                .pos = {-250 + (x / (f32)obj_grid_size) * 500, 0, -250 + (y / (f32)obj_grid_size) * 500},
+                .rot = {0,0,0}
+            );                
+            
+            ent_add_model(manager,  obj, rmanager, model, is_static);
+        }
+    }
+
+    msg("ent count = %u", manager->active_count);
+    msg("ent count (static_mesh) = %u", ent_table_entries(manager, static_mesh));
+    msg("ent count (volatile_mesh) = %u", ent_table_entries(manager, volatile_mesh));
+    msg("ent count (ent_root) = %u", ent_table_entries(manager, ent_root));
+}   
 
 void env_init(int argc, char **argv)
 {    
@@ -520,10 +590,17 @@ void env_init(int argc, char **argv)
     env.main_thread_pool = thread_pool_make(
         .mem = env.static_memory, 
         .name = text64_make("env.main_thread_pool"), 
-        .size = os_fetch_hardware_info().logical_processors - 1
+        .size = os_fetch_hardware_info().logical_processors
     );
 
-    env.ent_manager = ent_manager_make(env.static_memory, 100000);    
+    env.ent_manager = ent_manager_make(  
+        basic,      
+        .mem = env.static_memory,
+        .name = text128_make("env.ent_manager"),
+        .capacity = 65000,
+        .names = true,
+        .relations = true,
+    );    
 
     env.glfw_ctx = glfw_context_make();
     env.tick_info = (tick_info){0};
@@ -547,6 +624,8 @@ void env_init(int argc, char **argv)
         .present_mode = VK_PRESENT_MODE_FIFO_KHR
     );
         
+    env.gpu_prf = gpu_profiler_make(&env.gpu);
+
     env_init_gpu_memory();
 
     env.main_render_manager = render_manager_make(
@@ -571,55 +650,13 @@ void env_init(int argc, char **argv)
         render_scene_default
     );
 
-    msg("%llu", env.main_render_manager.geometry.positions->handle);
-
     env_init_full_viewports(1);
 
     refresh_swapchain_targets();
 
-    ent_session(&env.ent_manager)
-    {      
-        ent_spawn_with(
-            ent_with_name("player : %u", ent_with_id());
-            ent_with_transform();
-            ent_with_children(
-                ent_spawn_with(
-                    ent_with_name("player : %u", ent_with_id());
-                    ent_with_transform();                       
-                    ent_with(camera_controller);            
-                ),
-                ent_spawn_with(
-                    ent_with_name("player : %u", ent_with_id());
-                    ent_with_transform();                       
-                    ent_with(camera_controller);            
-                )
-            );            
-            ent_with(camera_controller);            
-        );      
+    env.static_mesh_frames_to_collect = frames_in_flight;
 
-        u32 obj_grid_size = 15;
-
-        for each_index(x, obj_grid_size)
-        {
-            for each_index(y, obj_grid_size)
-            {
-                ent_spawn_with(
-                    ent_with_name("static_obj : %u", ent_with_id());                
-                    ent_with_transform(
-                        .pos = {-250 + (x / (f32)obj_grid_size) * 500, 0, -250 + (y / (f32)obj_grid_size) * 500},
-                        .rot = {0,0,0}
-                    );
-                    ent_with_model(&env.main_render_manager, sponza_model, ent_with_id() % 2);
-                );      
-            }
-        }
-
-        msg("ent count = %u", env.ent_manager.active_count);
-        msg("ent count (static_geometry) = %u", ent_table_entries(static_geometry));
-        msg("ent count (volatile_geometry) = %u", ent_table_entries(volatile_geometry));
-    }
-
-    env.static_geometry_frames_to_collect = frames_in_flight;
+    spawn_scene(&env.ent_manager, &env.main_render_manager, sponza_model);
 }
 
 void env_release()
@@ -630,7 +667,7 @@ void env_release()
     // gbuffer_pass_release(&env.gbuffer_pass, &env.gpu);
     // depth_pass_release(&env.depth_pass, &env.gpu);
     // render_manager_release(&env.main_render_manager, &env.gpu);
-    
+    gpu_profiler_release(&env.gpu_prf, &env.gpu);
     gpu_context_release(&env.gpu);
     window_release(env.win);
     glfw_context_release(&env.glfw_ctx);
@@ -638,38 +675,41 @@ void env_release()
     arena_release(env.static_memory);
 }
 
-void collect_volatile_geometry(
+void collect_volatile_mesh(
     gpu_context *gpu,  
     render_batch batches per_frame_in_flight,
-    ent_manager *entities)
+    basic_ent_manager *entities)
 {
     render_batch *batch = render_batch_reset(batches + gpu->frame_index);
+    
+    basic_ent_query q = ent_query_make(            
+        entities,
+        .include_mask = ent_bitmask_make(entities, volatile_mesh)
+    );
 
-    ent_session(entities)
-    {        
-        for ent_each_with(query, volatile_geometry)
-        {                        
-            u32 local_geometry_id = ent_local_id_0_based(query.id, volatile_geometry);
-            
-            ((render_transform*)batch->transform_buffer->mem)[local_geometry_id].mat = query.global_transform->mat;
-            ((render_mesh_id*)batch->mesh_id_buffer->mem)[local_geometry_id] = *query.render_mesh_id;
-            batch->instance_counts[*query.render_mesh_id]++;
-        }
-    }    
+    while(ent_query_next(&q))
+    {                        
+        u32 local_geometry_id = ent_local_id(entities, q.id, volatile_mesh);
+        render_mesh_id mesh_id = ent_get(entities, q.id, volatile_mesh)->mesh_id;
+
+        ((render_transform*)batch->transform_buffer->mem)[local_geometry_id].mat = ent_get(entities, q.id, global_transform)->mat;
+        ((render_mesh_id*)batch->mesh_id_buffer->mem)[local_geometry_id] = mesh_id;
+        batch->instance_counts[mesh_id]++;
+    }
 }
 
-void collect_static_geometry_record(
+void collect_static_mesh_record(
     VkCommandBuffer cmd, 
     gpu_context *gpu,  
     render_batch batches per_frame_in_flight,
-    ent_manager *entities)
+    basic_ent_manager *entities)
 {
-    render_batch *batch = render_batch_reset(batches + gpu->frame_index);
+    render_batch *batch = render_batch_reset(batches + gpu->frame_index);    
 
     gpu_buffer *instance_transform_stagin = gpu_buffer_arena_push(
         render_transform,
         .tag = text128_make("[%s] instance_transform_stagin", __func__),
-        .arena = env.gpu_memory.frame_deferred_buffer[gpu->frame_index][buffer_memory_kind_coherent_src],
+        .arena = env.gpu_memory.fd_buffer[gpu->frame_index][buffer_memory_kind_coherent_src],
         .device = &gpu->device,
         .size = batch->instance_capacity
     );
@@ -677,120 +717,110 @@ void collect_static_geometry_record(
     gpu_buffer *instance_mesh_stagin = gpu_buffer_arena_push(
         render_mesh_id,
         .tag = text128_make("[%s] instance_mesh_stagin", __func__),
-        .arena = env.gpu_memory.frame_deferred_buffer[gpu->frame_index][buffer_memory_kind_coherent_src],
+        .arena = env.gpu_memory.fd_buffer[gpu->frame_index][buffer_memory_kind_coherent_src],
         .device = &gpu->device,
         .size = batch->instance_capacity
     );
 
-    ent_session(entities)
-    {
-        for ent_each_with(query, static_geometry)
-        {
-            global_transform *gtr = query.global_transform; 
-            render_mesh_id mesh_id = *query.render_mesh_id; 
+    basic_ent_query q = ent_query_make(            
+        entities,
+        .include_mask = ent_bitmask_make(entities, static_mesh)
+    );
 
-            u32 local_geometry_id = ent_local_id_0_based(query.id, static_geometry);
+    while(ent_query_next(&q))
+    {                        
+        u32 local_geometry_id = ent_local_id(entities, q.id, static_mesh);
+        render_mesh_id mesh_id = ent_get(entities, q.id, static_mesh)->mesh_id;
 
-            ((render_transform*)instance_transform_stagin->mem)[local_geometry_id].mat = gtr->mat;
-            ((render_mesh_id*)instance_mesh_stagin->mem)[local_geometry_id] = mesh_id;
+        ((render_transform*)instance_transform_stagin->mem)[local_geometry_id].mat = ent_get(entities, q.id, global_transform)->mat;
+        ((render_mesh_id*)instance_mesh_stagin->mem)[local_geometry_id] = mesh_id;
+        batch->instance_counts[mesh_id]++;
+    }
 
-            batch->instance_counts[mesh_id]++;
-        }
-    
-        vku_cmd_copy_buffer(cmd, instance_transform_stagin, batch->transform_buffer, 0, 0);
-        vku_cmd_copy_buffer(cmd, instance_mesh_stagin, batch->mesh_id_buffer, 0, 0);
+    vku_cmd_copy_buffer(cmd, instance_transform_stagin, batch->transform_buffer, 0, 0);
+    vku_cmd_copy_buffer(cmd, instance_mesh_stagin, batch->mesh_id_buffer, 0, 0);
 
-        vku_cmd_memory_barrier(
-            cmd,
+    vku_cmd_memory_barrier(
+        cmd,
 
-            VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT, 
-            
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-            VK_ACCESS_2_SHADER_READ_BIT
-        );
-    } 
-    
+        VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,
+        VK_ACCESS_2_TRANSFER_WRITE_BIT, 
+        
+        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+        VK_ACCESS_2_SHADER_READ_BIT
+    );    
 }
 
-void global_transform_handler_helper(ent_manager *manager, mat4 *parent_mat, ent_id id)
-{           
-    ent_session(manager)
-    {        
-        mat4_f32_mul_fast(
-            parent_mat, 
-            local_transform_as_mat(ent_get(id, local_transform)), 
-            &ent_get(id, global_transform)->mat
-        );
-        
-        for ent_each_child(ch, id)
-        {            
-            global_transform_handler_helper(manager, &ent_get(id, global_transform)->mat, *ch);
-        }  
-    }
+void transform_prop_handler_helper(basic_ent_manager * restrict manager, mat4 * restrict parent_mat, basic_ent_id id)
+{               
+    mat4_f32_mul_fast(
+        parent_mat, 
+        local_transform_as_mat(ent_get(manager, id, local_transform)), 
+        &ent_get(manager, id, global_transform)->mat
+    );
+    
+    for ent_each_child(manager, ch, id)
+    {            
+        transform_prop_handler_helper(manager, &ent_get(manager, id, global_transform)->mat, *ch);
+    }  
 }
 
 thread_pool_task_declare(
-    global_transform_propogation,
-    { ent_manager *manager; ent_query query; },
-    {
-        ent_session(args->manager)
-        {
-            for ent_each_of(it, args->query)
+    transform_prop,
+    { basic_ent_manager *manager; basic_ent_query *query; },
+    {        
+        while(ent_query_next(args->query))
+        {                    
+            global_transform * restrict gtr = ent_get(args->manager, args->query->id, global_transform);
+            local_transform * restrict ltr = ent_get(args->manager, args->query->id, local_transform);
+            
+            gtr->mat = *local_transform_as_mat(ltr);
+            
+            for ent_each_child(args->manager, ch, args->query->id)
             {
-                if(!it.relation->parent)
-                {
-                    local_transform *ltr = it.local_transform;
-                    
-                    it.global_transform->mat = *local_transform_as_mat(it.local_transform);
-                    
-                    for ent_each_child(ch, it.id)
-                    {
-                        global_transform_handler_helper(args->manager, &it.global_transform->mat, *ch);                    
-                    }                
-                }
-            }
+                transform_prop_handler_helper(args->manager, &gtr->mat, *ch);                    
+            }                
         }
+
+        return NULL;
     }       
 )
 
-void global_transform_handler(ent_manager *manager, arena *temp_mem, thread_pool *pool)
+void transform_prop_handler(
+    basic_ent_manager *manager, 
+    arena *temp_mem, 
+    thread_pool *pool)
 {
-    ent_session(manager)
+    basic_ent_query full_query = ent_query_make(   
+        manager,   
+        .include_mask = ent_bitmask_make(
+            manager,
+            local_transform, 
+            global_transform,
+            ent_root
+        ),
+    );        
+
+    basic_ent_query *queries = ent_query_split(
+        &full_query,
+        pool->size,
+        temp_mem     
+    );        
+
+    for each_index(i, pool->size)
     {
-        ent_query query = ent_query_make(
-            ent_get_session(), 
-            ent_bitmask_make(local_transform, global_transform)
-        ); 
+        transform_prop_args *arg = arena_ppush(temp_mem, transform_prop_args);
 
-        u32 count   = query.count;
-        u32 workers = pool->size;
-        u32 chunk   = (count + workers - 1) / workers;  
+        arg->manager = manager;
+        arg->query = queries + i;
 
-        for each_index(i, workers)
-        {
-            u32 start = i * chunk;
-            if (start >= count) break;                   
-
-            global_transform_propogation_args *arg = arena_ppush(temp_mem, global_transform_propogation_args);
-
-            arg->manager = manager;
-            arg->query = query;
-            arg->query.entries       = query.entries + start;
-            arg->query.count         = (count - start < chunk) ? (count - start) : chunk;
-            arg->query.current_entry = 1;
-            arg->query.id            = 0;
-            ent_query_next(&arg->query); 
-
-            thread_pool_schedule(
-                pool, 
-                global_transform_propogation_task_make(arg)
-            );
-        }
-
-        thread_pool_wait_all(pool);
+        thread_pool_schedule(
+            pool, 
+            transform_prop_task_make(arg)
+        );
     }
 
+    thread_pool_wait_all(pool);
 }
 
 void main_camera_update()
@@ -800,84 +830,80 @@ void main_camera_update()
         env.full_viewports[env.main_full_viewport_id].cam.ratio = (f32)env.gpu.swapchain.extent.width / (f32)env.gpu.swapchain.extent.height;        
     }
 
-    f64 current_mouse_x, current_mouse_y;
-    glfwGetCursorPos(env.win->handle, &current_mouse_x, &current_mouse_y);
+    vec2_f64 current_mouse_pos = window_mouse_pos(env.win);
 
-    if (!env.not_first_mouse && env.mouse_captured)
-    {
-        env.last_mouse_x = current_mouse_x;
-        env.last_mouse_y = current_mouse_y;
-        env.not_first_mouse = true;
-    }
+    vec2_f64 mouse_delta = vec2_f64_sub(current_mouse_pos, env.last_mouse_pos);
 
-    f64 delta_x = current_mouse_x - env.last_mouse_x;
-    f64 delta_y = current_mouse_y - env.last_mouse_y;
+    env.last_mouse_pos.x = current_mouse_pos.x;
+    env.last_mouse_pos.y = current_mouse_pos.y;
 
-    env.last_mouse_x = current_mouse_x;
-    env.last_mouse_y = current_mouse_y;
+    const f32 mouse_sensitivity = 0.002f; 
 
-    f32 mouse_sensitivity = 0.002f; 
+    basic_ent_query q = ent_query_make(
+        &env.ent_manager,
+        .include_mask = ent_bitmask_make(&env.ent_manager, camera_controller)
+    );
 
-    ent_session(&env.ent_manager)
-    {
-        for ent_each_with(it, camera_controller, global_transform)
-        {                    
-            if (env.mouse_captured)
-            {                
-                it.local_transform->rot.y -= (f32)delta_x * mouse_sensitivity; // yaw
-                it.local_transform->rot.x -= (f32)delta_y * mouse_sensitivity; // pitch
+    ent_query_next(&q);
+    basic_ent_id controller_id = q.id;
+    dbg_verify(ent_query_next(&q));
 
-                f32 max_pitch = 1.55f; 
-                if (it.local_transform->rot.x > max_pitch) it.local_transform->rot.x = max_pitch;
-                if (it.local_transform->rot.x < -max_pitch) it.local_transform->rot.x = -max_pitch;
-                
-                f32 velocity = (window_key_down(env.win, GLFW_KEY_LEFT_SHIFT) ? 30.0f : 15.0f) * env.tick_info.dt; 
+    if (env.mouse_captured)
+    {                        
+        local_transform *ltr = ent_get(&env.ent_manager, q.id, local_transform);
+        
+        ltr->rot.y -= (f32)mouse_delta.x * mouse_sensitivity; // yaw
+        ltr->rot.x -= (f32)mouse_delta.y * mouse_sensitivity; // pitch
 
-                f32 yaw = it.local_transform->rot.y;
-                
-                f32 fwd_x = -sinf(yaw);
-                f32 fwd_z = -cosf(yaw);
-                
-                f32 right_x = cosf(yaw);
-                f32 right_z = -sinf(yaw);
+        f32 max_pitch = 1.55f; 
+        if (ltr->rot.x > max_pitch) ltr->rot.x = max_pitch;
+        if (ltr->rot.x < -max_pitch) ltr->rot.x = -max_pitch;
+        
+        f32 velocity = (window_key_down(env.win, GLFW_KEY_LEFT_SHIFT) ? 30.0f : 15.0f) * env.tick_info.dt; 
 
-                if (window_key_down(env.win, GLFW_KEY_W)) 
-                {
-                    it.local_transform->pos.x += fwd_x * velocity;
-                    it.local_transform->pos.z += fwd_z * velocity;
-                }
-                if (window_key_down(env.win, GLFW_KEY_S)) 
-                {
-                    it.local_transform->pos.x -= fwd_x * velocity;
-                    it.local_transform->pos.z -= fwd_z * velocity;
-                }
+        f32 yaw = ltr->rot.y;
+        
+        f32 fwd_x = -sinf(yaw);
+        f32 fwd_z = -cosf(yaw);
+        
+        f32 right_x = cosf(yaw);
+        f32 right_z = -sinf(yaw);
 
-                if (window_key_down(env.win, GLFW_KEY_A)) 
-                {
-                    it.local_transform->pos.x -= right_x * velocity;
-                    it.local_transform->pos.z -= right_z * velocity;
-                }
-                if (window_key_down(env.win, GLFW_KEY_D)) 
-                {
-                    it.local_transform->pos.x += right_x * velocity;
-                    it.local_transform->pos.z += right_z * velocity;
-                }
-
-                if (window_key_down(env.win, GLFW_KEY_SPACE)) 
-                {
-                    it.local_transform->pos.y += velocity; 
-                }
-                if (window_key_down(env.win, GLFW_KEY_LEFT_CONTROL)) 
-                {
-                    it.local_transform->pos.y -= velocity; 
-                }
-            }
-
-            camara_update(
-                &env.full_viewports[env.main_full_viewport_id].cam, 
-                it.global_transform->mat
-            ); 
+        if (window_key_down(env.win, GLFW_KEY_W)) 
+        {
+            ltr->pos.x += fwd_x * velocity;
+            ltr->pos.z += fwd_z * velocity;
         }
+        if (window_key_down(env.win, GLFW_KEY_S)) 
+        {
+            ltr->pos.x -= fwd_x * velocity;
+            ltr->pos.z -= fwd_z * velocity;
+        }
+
+        if (window_key_down(env.win, GLFW_KEY_A)) 
+        {
+            ltr->pos.x -= right_x * velocity;
+            ltr->pos.z -= right_z * velocity;
+        }
+        if (window_key_down(env.win, GLFW_KEY_D)) 
+        {
+            ltr->pos.x += right_x * velocity;
+            ltr->pos.z += right_z * velocity;
+        }
+
+        if (window_key_down(env.win, GLFW_KEY_SPACE)) 
+        {
+            ltr->pos.y += velocity; 
+        }
+        if (window_key_down(env.win, GLFW_KEY_LEFT_CONTROL)) 
+        {
+            ltr->pos.y -= velocity; 
+        }
+
+        camara_update(
+            &env.full_viewports[env.main_full_viewport_id].cam, 
+            ent_get(&env.ent_manager, q.id, global_transform)->mat
+        ); 
     }
 }
 
@@ -893,26 +919,22 @@ void events()
     
 void move_stuff()
 {
-    ent_session(&env.ent_manager)
-    {
-        for ent_each_with(it, volatile_geometry)
-        {            
-            ent_id root = it.id;
+    basic_ent_query q = ent_query_make(
+        &env.ent_manager,
+        .include_mask = ent_bitmask_make(&env.ent_manager, dude, ent_root)
+    );
 
-            while(ent_get(root, relation)->parent)
-            {
-                root = ent_get(root, relation)->parent;
-            }
+    while(ent_query_next(&q))
+    {            
+        local_transform *ltr = ent_get(&env.ent_manager, q.id, local_transform);
 
-            local_transform *ltr = ent_get(root, local_transform);
+        f32 x = ltr->pos.x;
+        f32 z = ltr->pos.z;
+        
+        f32 phase = (f32)fmod(env.tick_info.time * 2.0 + x * 0.05 + z * 0.05, 2.0 * jahoda_math_pi);
+        f32 y = sinf(phase) * 5.0f;
 
-            f32 x = ltr->pos.x;
-            f32 z = ltr->pos.z;
-            
-            f32 y = sinf((f32)env.tick_info.time * 2.0f + x * 0.05f + z * 0.05f) * 5.0f;
-
-            local_transform_set_pos(ltr, (vec3){ .x = x, .y = y, .z = z });
-        }
+        local_transform_set_pos(ltr, (vec3){ .x = x, .y = y, .z = z });
     }
 }
 
@@ -922,22 +944,22 @@ void update()
 
     tick_info_update(&env.tick_info);  
 
-    profile_imm("move_stuff")
+    profile_scope(&env.prf, "move_stuff")
     {
         move_stuff();   
     }
 
-    profile_imm("global_transform_handler")
+    profile_scope(&env.prf,"global_transform_handler")
     {
-        global_transform_handler(&env.ent_manager, env.temp_memory, env.main_thread_pool);
+        transform_prop_handler(&env.ent_manager, env.temp_memory, env.main_thread_pool);
     }
-    
+
     main_camera_update();
 }
 
 void render_depth_only_viewport_record(VkCommandBuffer cmd, render_depth_only_viewport *vp)
 {
-    profile_imm("render_batch_fill_pass_record (depth_only vp = %x)", vp)
+    cpu_n_gpu_profile_scope(cmd, "render_batch_fill_pass_record (depth_only vp = %x)", vp)
     {
         render_command_fill_pass_record(
             cmd,
@@ -951,7 +973,7 @@ void render_depth_only_viewport_record(VkCommandBuffer cmd, render_depth_only_vi
         );
     }
 
-    profile_imm("depth_pass_record (depth_only vp = %x)", vp)    
+    cpu_n_gpu_profile_scope(cmd, "depth_pass_record (depth_only vp = %x)", vp)    
     {
         depth_pass_record(
             cmd,
@@ -959,7 +981,7 @@ void render_depth_only_viewport_record(VkCommandBuffer cmd, render_depth_only_vi
             &env.gpu, 
             env.temp_memory,
             &env.main_render_manager.geometry,
-            &vp->depth,
+            vp->depth,
             render_geometry_type_count,
             vp->commands,
             &vp->cam
@@ -969,7 +991,7 @@ void render_depth_only_viewport_record(VkCommandBuffer cmd, render_depth_only_vi
 
 void render_full_viewport_record(VkCommandBuffer cmd, render_full_viewport *vp)
 {
-    profile_imm("render_batch_fill_pass_record (full vp = %x)", vp)
+    cpu_n_gpu_profile_scope(cmd, "render_batch_fill_pass_record (full vp = %x)", vp)
     {
         render_command_fill_pass_record(
             cmd,
@@ -980,10 +1002,10 @@ void render_full_viewport_record(VkCommandBuffer cmd, render_full_viewport *vp)
             render_geometry_type_count,
             vp->commands,
             &vp->cam
-        );
+        );    
     }
 
-    profile_imm("depth_pass_record (full vp = %x)", vp)    
+    cpu_n_gpu_profile_scope(cmd, "depth_pass_record (full vp = %x)", vp)    
     {
         depth_pass_record(
             cmd,
@@ -991,14 +1013,14 @@ void render_full_viewport_record(VkCommandBuffer cmd, render_full_viewport *vp)
             &env.gpu, 
             env.temp_memory,
             &env.main_render_manager.geometry,
-            &vp->depth,
+            vp->depth,
             render_geometry_type_count,
             vp->commands,
             &vp->cam
         );
     }
     
-    profile_imm("gbuffer_pass_record (full vp = %x)", vp)
+    cpu_n_gpu_profile_scope(cmd, "gbuffer_pass_record (full vp = %x)", vp)
     {
         gbuffer_pass_record(
             cmd,
@@ -1012,17 +1034,18 @@ void render_full_viewport_record(VkCommandBuffer cmd, render_full_viewport *vp)
             render_geometry_type_count,
             vp->commands,
             &vp->cam
-        );
+            );
     }
 
-    profile_imm("deferred_light_pass_record (full vp = %x)", vp)
+
+    cpu_n_gpu_profile_scope(cmd, "deferred_light_pass_record (full vp = %x)", vp)
     {
         deferred_light_pass_record(
             cmd,
             &vp->deferred_light_pass, 
             &env.gpu, 
             env.temp_memory, 
-            env.gpu_memory.scene_bound_buffer[buffer_memory_kind_coherent_resource_descriptor_buffer],
+            env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_resource_descriptor_buffer],
             vp->depth,
             vp->color_target[render_color_target_albedo],
             vp->color_target[render_color_target_normal],
@@ -1031,7 +1054,7 @@ void render_full_viewport_record(VkCommandBuffer cmd, render_full_viewport *vp)
         );
     }
 
-    profile_imm("crt_pass_record (full vp = %x)", vp)
+    cpu_n_gpu_profile_scope(cmd, "crt_pass_record (full vp = %x)", vp)
     {
         crt_params params = crt_params_default;
 
@@ -1050,7 +1073,7 @@ void render_full_viewport_record(VkCommandBuffer cmd, render_full_viewport *vp)
             &vp->crt_pass,             
             &env.gpu, 
             env.temp_memory,             
-            env.gpu_memory.scene_bound_buffer[buffer_memory_kind_coherent_resource_descriptor_buffer],
+            env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_resource_descriptor_buffer],
             env.tick_info.time,
             vp->color_target[render_color_target_light],
             vp->color_target[render_color_target_crt],
@@ -1061,14 +1084,14 @@ void render_full_viewport_record(VkCommandBuffer cmd, render_full_viewport *vp)
 
 void present_record(VkCommandBuffer cmd, gpu_texture *texture[frames_in_flight])
 {
-    profile_imm("present_pass_record")
+    cpu_n_gpu_profile_scope(cmd, "present_pass_record")
     {
         present_pass_record(
             cmd,
             &env.shared_gpu_passes.present_pass, 
             &env.gpu, 
             env.temp_memory,
-            env.gpu_memory.scene_bound_buffer[buffer_memory_kind_coherent_resource_descriptor_buffer],
+            env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_resource_descriptor_buffer],
             texture
         );
     }    
@@ -1076,24 +1099,24 @@ void present_record(VkCommandBuffer cmd, gpu_texture *texture[frames_in_flight])
 
 void collect_geometry_record(VkCommandBuffer cmd)
 {
-    profile_imm("collect_static_geometry_record")
+    if(env.static_mesh_frames_to_collect)
     {
-        if(env.static_geometry_frames_to_collect)
+        cpu_n_gpu_profile_scope(cmd, "collect_static_mesh_record")
         {
-            collect_static_geometry_record(
+            collect_static_mesh_record(
                 cmd,
                 &env.gpu, 
                 env.static_opaque_batches,
                 &env.ent_manager
             );
-
-            env.static_geometry_frames_to_collect--;
         }
+
+        env.static_mesh_frames_to_collect--;
     }
 
-    profile_imm("collect_volatile_geometry")
+    cpu_n_gpu_profile_scope(cmd, "collect_volatile_mesh")
     {
-        collect_volatile_geometry(
+        collect_volatile_mesh(
             &env.gpu, 
             env.volatile_opaque_batches,
             &env.ent_manager
@@ -1105,43 +1128,47 @@ void render()
 {   
     if (window_is_minimized(env.win)) { return; } 
 
-    b8 begin_success = gpu_context_try_begin_frame(&env.gpu, env.win, env.temp_memory);
+    gpu_context_drain(&env.gpu);
 
-    for each_index(i, arrsize(frame_deferred_buffer_memory_entreis))
+    for each_index(i, arrlen(fd_buffer_memory_entreis))
     {    
-        buffer_memory_entry entry = frame_deferred_buffer_memory_entreis[i];
-        gpu_buffer_arena_reset(env.gpu_memory.frame_deferred_buffer[env.gpu.frame_index][entry.kind], &env.gpu.device);
+        buffer_memory_entry entry = fd_buffer_memory_entreis[i];
+        gpu_buffer_arena_reset(env.gpu_memory.fd_buffer[env.gpu.frame_index][entry.kind], &env.gpu.device);
     }
 
-    for each_index(i, arrsize(temp_buffer_memory_entries))
+    for each_index(i, arrlen(temp_buffer_memory_entries))
     {
         buffer_memory_entry entry = temp_buffer_memory_entries[i];
         gpu_buffer_arena_reset(env.gpu_memory.temp_buffer[entry.kind], &env.gpu.device);
     }
 
-    if(begin_success)
+    if(gpu_context_try_begin_frame(&env.gpu, env.win, env.temp_memory))
     {
         if(env.gpu.swapchain_was_refreshed)
         {
-            for each_index(i, arrsize(swapchain_bound_buffer_memory_entries))
+            for each_index(i, arrlen(swpc_buffer_memory_entries))
             {
-                buffer_memory_entry entry = swapchain_bound_buffer_memory_entries[i];
-                gpu_buffer_arena_reset(env.gpu_memory.swapchain_bound_buffer[entry.kind], &env.gpu.device);
+                buffer_memory_entry entry = swpc_buffer_memory_entries[i];
+                gpu_buffer_arena_reset(env.gpu_memory.swpc_buffer[entry.kind], &env.gpu.device);
             }
-
-            for each_index(i, arrsize(swapchain_bound_texture_memory_entries))
+            
+            for each_index(i, arrlen(swpc_texture_memory_entries))
             {
-                texture_memory_entry entry = swapchain_bound_texture_memory_entries[i];
-                gpu_texture_arena_reset(env.gpu_memory.swapchain_bound_texture[entry.kind], &env.gpu.device);
+                texture_memory_entry entry = swpc_texture_memory_entries[i];
+                gpu_texture_arena_reset(env.gpu_memory.swpc_texture[entry.kind], &env.gpu.device);
             }
-
+            
             refresh_swapchain_targets();
         }
 
+        gpu_profiler_resolve(&env.gpu_prf, &env.gpu);
+
         VkCommandBuffer cmd = gpu_context_grab_graphics(&env.gpu);
+
+        gpu_profiler_reset(&env.gpu_prf, &env.gpu, cmd);
         
         collect_geometry_record(cmd);
-
+        
         render_full_viewport_record(
             cmd, 
             &env.full_viewports[env.main_full_viewport_id]
@@ -1149,50 +1176,59 @@ void render()
 
         present_record(
             cmd,
-            env.full_viewports[env.main_full_viewport_id].color_target[render_color_target_crt]
+            env.full_viewports[env.main_full_viewport_id].color_target[env.present_target]
         );
 
-        vku_cmd_textures_transition_state(
+        vku_cmd_textures_transition_state(  
             cmd,
             env.temp_memory, 
             { env.gpu.swapchain.textures + env.gpu.swapchain_image_index, gpu_texture_state_present }
         );
-    
+        
         gpu_context_commit_graphics(&env.gpu, cmd);
         
-        profile_imm("gpu_context_end_frame")
+        profile_scope(&env.prf,"gpu_context_end_and_present_frame")
         { 
-            gpu_context_end_frame(&env.gpu, env.temp_memory);		
+            gpu_context_end_and_present_frame(&env.gpu, env.temp_memory);		
         }        
     }    
 }
 
-void jgfx_run(int argc, char **argv)
+int jgfx_run(int argc, char **argv)
 {
     log_dest(stdout);
 
-    profile_imm("env_init") 
-    {
-        env_init(argc, argv);
-    }        
-
+    env_init(argc, argv);
+    
 	window_make_visible(env.win);
    
     while (!env.exit)
     {     
-        profile_imm("frame %u", env.tick_info.tick)
-        {
+        profiler_reset(&env.prf);
+
+        profile_scope(&env.prf,"frame %u", env.tick_info.tick)
+        {            
             events();
             update();
             render();
-    
-            msg("env.temp_memory current = %.2lf Kb", as_Kb(env.temp_memory->current));
 
+            msg("env.temp_memory current = %.2lf Kb", as_Kb(env.temp_memory->current));
+            
             arena_reset(env.temp_memory); 
+        }
+
+        for each_index(i, env.gpu_prf.scopes_occupied[env.gpu.frame_index])
+        {
+            msgl(gpu_prf, gpu_profile_scope_fmt, gpu_profile_scope_arg(env.gpu_prf.scopes[env.gpu.frame_index] + i));
+        }
+
+        for each_index(i, env.prf.scopes_occupied)
+        {
+            msgl(cpu_prf, profile_scope_fmt, profile_scope_arg(env.prf.scopes + i));
         }
     }
     
-    profile_imm("env_release")
+    profile_scope(&env.prf,"env_release")
     {
         env_release();    
     }

@@ -33,6 +33,8 @@ void log_sync_disable();
 
 #define bit(x) (1ull << x)
 #define has_bit(mask, b) (mask & bit(b))
+#define has_bitset(mask, set) ((mask & set) == set)
+#define has_bitset_any(mask, set) (mask & set)
 
 #ifndef NDEBUG
 #define jahoda_debug
@@ -45,8 +47,15 @@ void log_sync_disable();
 
 #define ref [const static 1]
 
+#define xlist_apply(l, f) l(f)
+
 #define concat_helper(x, y) x##y
 #define concat(x, y) concat_helper(x,y)
+
+#define xconcat_(x, y) x##y
+#define xconcat(x, y) xconcat_(x, y)
+
+#define zero_fill(v) memset(v, 0, sizeof(*v))
 
 #define each_index_range(index_var_name, from, to)\
 (u64 index_var_name = (from); index_var_name < (to); index_var_name++)
@@ -60,7 +69,7 @@ void log_sync_disable();
 
 #define static_assert(expr) typedef int static_assert_##__COUNTER__[(expr) ? 1 : -1]
 
-#define arrsize(...) (sizeof(__VA_ARGS__)/sizeof(__VA_ARGS__[0]))
+#define arrlen(...) (sizeof(__VA_ARGS__)/sizeof(__VA_ARGS__[0]))
 
 #define ansi_esq_seq "\033"
 
@@ -91,7 +100,7 @@ void print_colored_if_isatty(const char* color, const char* str);
 void log_dest(FILE *file);
 FILE *get_log_dest();
 
-#if 0
+#if 1
 #define msgl(label, ...)({\
 	log_sync_lock();\
 	print_colored_if_isatty(ansi_text_color_blue, #label ": ");\
@@ -167,7 +176,10 @@ do\
 #define dbg_verifyl(label, expr, ...) (void)0
 #endif
 
-#define alignas(v) __attribute__((aligned(v)))
+#ifndef alignas 
+	#define alignas(v) __attribute__((aligned(v)))
+#endif
+
 #define nodiscard __attribute__((warn_unused_result)) 
 
 #define alignof(...) __alignof__(__VA_ARGS__)
@@ -266,4 +278,5 @@ text_declare(text64, 64);
 text_declare(text128, 128);
 text_declare(text256, 256);
 
-#endif	
+#endif
+

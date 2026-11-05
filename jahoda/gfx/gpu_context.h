@@ -64,8 +64,9 @@ VkCommandBuffer gpu_context_grab_graphics(gpu_context *gpu);
 void gpu_context_commit_graphics(gpu_context *gpu, VkCommandBuffer cmd);
 void gpu_context_release(gpu_context *gpu);
 void gpu_context_set_present_mode(gpu_context *gpu, VkPresentModeKHR present_mode);
+void gpu_context_drain(gpu_context *gpu);
 b8 gpu_context_try_begin_frame(gpu_context *gpu, window *win, arena *temp_mem);
-void gpu_context_end_frame(gpu_context *gpu, arena *temp_mem);
+void gpu_context_end_and_present_frame(gpu_context *gpu, arena *temp_mem);
 void gpu_context_immidiate_graphics(gpu_context *gpu);
 
 u32 gpu_buffer_type_index(gpu_device *device, gpu_physical_device *pdevice, VkBufferUsageFlags usage, VkBufferCreateFlags flags, VkMemoryPropertyFlags properties);

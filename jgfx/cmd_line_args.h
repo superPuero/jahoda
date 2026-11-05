@@ -52,6 +52,6 @@ command_line_args_parsed command_line_args_parse_(command_line_args_parse_params
 
 #define command_line_arg(name_, type_) name = text64_make(name_), .type = command_line_args_content_type_##type_
 
-#define command_line_args_parse(...) command_line_args_parse_((command_line_args_parse_params){ .entries_count = arrsize((command_line_args_parse_entry[]){__VA_ARGS__}), .entries = (command_line_args_parse_entry[]){__VA_ARGS__}})
+#define command_line_args_parse(...) command_line_args_parse_((command_line_args_parse_params){ .entries_count = arrlen((command_line_args_parse_entry[]){__VA_ARGS__}), .entries = (command_line_args_parse_entry[]){__VA_ARGS__}})
 
 #endif 

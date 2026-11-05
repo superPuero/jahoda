@@ -20,6 +20,11 @@ struct window
 	b8 keys_down[GLFW_KEY_LAST];
 	b8 keys_pressed[GLFW_KEY_LAST];
 	b8 keys_just_pressed[GLFW_KEY_LAST];
+	
+	vec2_f64 last_mouse_pos;
+    b8 mouse_captured;
+    b8 first_mouse;
+
 	struct {
 		window_key_callback *key_fn;
 		void *arg;
@@ -51,7 +56,7 @@ b8 window_is_minimized(window *win);
 b8 window_mouse_button_down(window *win, int button);
 b8 window_key_just_pressed(window *win, int button);
 b8 window_key_down(window *win, int button);
-vec2_f32 window_mouse_pos(window *win);
+vec2_f64 window_mouse_pos(window *win);
 void window_poll_events(window *win);
 void window_make_visible(window *win);
 void window_wait_events(window *win);

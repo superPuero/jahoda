@@ -13,7 +13,7 @@ void depth_pass_record(
 	gpu_context *gpu, 
 	arena *pf_arena, 
 	render_geometry *geometry,
-	gpu_texture *out_depth[static 1][frames_in_flight],
+	gpu_texture *out_depth[frames_in_flight],
 	u32 command_count,
 	render_command (*commands)[frames_in_flight],
 	camera *cam)
@@ -32,7 +32,7 @@ void depth_pass_record(
 				VK_DYNAMIC_STATE_VIEWPORT, 
 				VK_DYNAMIC_STATE_SCISSOR
 			),
-			.depth_target_format = out_depth[0][gpu->frame_index]->format,
+			.depth_target_format = out_depth[gpu->frame_index]->format,
 			.render_state_push_constants(push_constants, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT),
 			.render_state_vertex_bindings(
 				render_vertex_binding[render_vertex_attribute_position]
@@ -55,7 +55,7 @@ void depth_pass_record(
 	vku_cmd_begin_rendering(
 		.cmd = cmd,
 		.temp_mem = pf_arena,
-		.depth_attachment = out_depth[0][gpu->frame_index],
+		.depth_attachment = out_depth[gpu->frame_index],
 		.extent = gpu->swapchain.extent,
 		.clear_color = {0,0,0,1},
 		.depth_load_op = VK_ATTACHMENT_LOAD_OP_CLEAR,

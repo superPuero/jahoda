@@ -64,7 +64,7 @@ void deferred_light_pass_record(
 		);  
 
         for each_index(i, frames_in_flight)
-        {
+        { 
             pass->descriptor_buffer[i] = gpu_buffer_arena_push(
                 u8,
                 .arena = coherent_descriptor_buffer_arena,

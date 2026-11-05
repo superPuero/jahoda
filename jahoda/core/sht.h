@@ -19,7 +19,7 @@ typedef struct\
 #define sht_keysize(table) sizeof((table)->keys[0]) - 2
 #define sht_sentinel(table) sizeof((table)->keys[0]) - 1
 
-#define sht_cap(table) arrsize((table)->values)
+#define sht_cap(table) arrlen((table)->values)
 
 #define sht_insert(table, key_strv, ...)\
 do\

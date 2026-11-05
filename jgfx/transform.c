@@ -3,22 +3,19 @@
 
 mat4 *local_transform_as_mat(local_transform *lt)
 {
-    // if(lt->dirty_frames)
-    {
-        lt->mat = mat4_f32_identity(1.0f);
+    lt->mat = mat4_f32_identity(1.0f);
+
+    mat4_f32_translate_ip(&lt->mat, lt->pos);
     
-        mat4_f32_translate_ip(&lt->mat, lt->pos);
-        
-        vec3 axis_y = {0.0f, 1.0f, 0.0f};
-        vec3 axis_x = {1.0f, 0.0f, 0.0f};
-        vec3 axis_z = {0.0f, 0.0f, 1.0f};
-    
-        mat4_f32_rotate_ip(&lt->mat, lt->rot.y, axis_y);
-        mat4_f32_rotate_ip(&lt->mat, lt->rot.x, axis_x);
-        mat4_f32_rotate_ip(&lt->mat, lt->rot.z, axis_z);
-    
-        mat4_f32_scale_ip(&lt->mat, lt->scale);
-    }
+    vec3 axis_y = {0.0f, 1.0f, 0.0f};
+    vec3 axis_x = {1.0f, 0.0f, 0.0f};
+    vec3 axis_z = {0.0f, 0.0f, 1.0f};
+
+    mat4_f32_rotate_ip(&lt->mat, lt->rot.y, axis_y);
+    mat4_f32_rotate_ip(&lt->mat, lt->rot.x, axis_x);
+    mat4_f32_rotate_ip(&lt->mat, lt->rot.z, axis_z);
+
+    mat4_f32_scale_ip(&lt->mat, lt->scale);
 
     return &lt->mat;
 }
@@ -67,6 +64,8 @@ local_transform local_transform_from_mat(mat4 *mat)
         out.rot.x = atan2f(-r12, r11);
         out.rot.z = 0.0f;
     }
+
+    return out;
 }
 
 void local_transform_translate(local_transform *lt, vec3 vec)

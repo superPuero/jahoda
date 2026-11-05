@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include "types.h"
+#include "utils.h"
 
 #define jahoda_math_epsilon      1.19209290e-7f
 #define jahoda_math_zero         0.0f
@@ -105,7 +106,7 @@ numeric_data_type_list
 
 // column major
 #define X(dt)\
-typedef struct\
+typedef struct alignas(sizeof(dt) * 4)\
 {\
 	vec4_##dt x;\
 	vec4_##dt y;\

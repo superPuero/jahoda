@@ -20,7 +20,7 @@ void depth_pass_record(
 	gpu_context *gpu, 
 	arena *pf_arena, 
 	render_geometry *geometry,
-	gpu_texture *out_depth[static 1][frames_in_flight],
+	gpu_texture *out_depth[frames_in_flight],
 	u32 command_count,
 	render_command (*commands)[frames_in_flight],
 	camera *cam);
