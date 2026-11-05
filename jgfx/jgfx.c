@@ -15,6 +15,17 @@
 #include "deferred_light_pass.h"
 #include "basic_pass.h"
 
+#define cmd_line_args_spec jgfx
+
+#define cmd_line_args\
+    X(log, cstr, "-", "destination for logging, \"stdout\" for standart output")\
+    X(obj_grid_size, u32, 25, "obj_grid_size")
+
+#define cmd_line_flag_args\
+    X(h, "help")
+
+#include <jahoda/meta/cmd_line_args.h>
+
 typedef struct {} dude;
 typedef struct {} camera_controller;
  
@@ -214,6 +225,8 @@ typedef struct
 
 internal struct
 {    
+    jgfx_cmd_line_args args;
+
 	arena *static_memory;
 	arena *temp_memory;
     arena *scene_memory;
@@ -483,7 +496,7 @@ void env_init_full_viewports(u32 count)
             .gpu = &env.gpu,  
             .any_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_local_ssbo_dst],
             .mem = env.static_memory,
-            .instance_count = 103 * 25 * 25
+            .instance_count = 103 * env.args.obj_grid_size * env.args.obj_grid_size
         );
 
         env.volatile_opaque_batches[i] = render_batch_make(
@@ -492,7 +505,7 @@ void env_init_full_viewports(u32 count)
             .gpu = &env.gpu,  
             .any_ssbo_arena = env.gpu_memory.sc_buffer[buffer_memory_kind_coherent_ssbo],        
             .mem = env.static_memory,
-            .instance_count = 103 * 25 * 25
+            .instance_count = 103 * env.args.obj_grid_size * env.args.obj_grid_size
         );
 
         for each_index(viewport_id, env.full_viewport_count)
@@ -537,11 +550,9 @@ void spawn_scene(basic_ent_manager *manager, render_manager *rmanager, render_mo
         }
     }
 
-    u32 obj_grid_size = 25;
-
-    for each_index(x, obj_grid_size)
+    for each_index(x, env.args.obj_grid_size)
     {
-        for each_index(y, obj_grid_size)
+        for each_index(y, env.args.obj_grid_size)
         {
             basic_ent_id obj = ent_spawn(manager);
 
@@ -556,7 +567,7 @@ void spawn_scene(basic_ent_manager *manager, render_manager *rmanager, render_mo
                 ent_name_set(manager, obj, "static_obj : %u", obj);
             }    
             ent_add_transform(manager, obj,
-                .pos = {-250 + (x / (f32)obj_grid_size) * 500, 0, -250 + (y / (f32)obj_grid_size) * 500},
+                .pos = {-250 + (x / (f32)env.args.obj_grid_size) * 500, 0, -250 + (y / (f32)env.args.obj_grid_size) * 500},
                 .rot = {0,0,0}
             );                
             
@@ -570,8 +581,10 @@ void spawn_scene(basic_ent_manager *manager, render_manager *rmanager, render_mo
     msg("ent count (ent_root) = %u", ent_table_entries(manager, ent_root));
 }   
 
-void env_init(int argc, char **argv)
-{    
+void env_init(jgfx_cmd_line_args args)
+{   
+    env.args = args;  
+
     env.static_memory = arena_make(
         .capacity = Gb(64),
         .name = text64_make("static_memory(env)")
@@ -597,7 +610,7 @@ void env_init(int argc, char **argv)
         basic,      
         .mem = env.static_memory,
         .name = text128_make("env.ent_manager"),
-        .capacity = 65000,
+        .capacity = 103 * env.args.obj_grid_size * env.args.obj_grid_size + 64,
         .names = true,
         .relations = true,
     );    
@@ -1195,10 +1208,23 @@ void render()
 }
 
 int jgfx_run(int argc, char **argv)
-{
-    log_dest(stdout);
+{   
+    jgfx_cmd_line_args args = jgfx_cmd_line_args_parse(argc, argv);
 
-    env_init(argc, argv);
+    if(args.h)
+    {
+        jgfx_cmd_line_args_display();
+        return 0;
+    }
+
+    if(args.log_provided)
+    {
+        log_dest(
+            (strcmp(args.log, "stdout") == 0) ? stdout : fopen(args.log, "w")
+        );
+    }
+
+    env_init(args);
     
 	window_make_visible(env.win);
    

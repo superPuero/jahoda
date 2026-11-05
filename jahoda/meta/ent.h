@@ -260,8 +260,6 @@ da_each(itname, &(manager)->relations[of].children)
 
 #define ent_spec_decl(x) concat(ent_spec, _##x)
 
-u32 ent_spec_decl(foo);
-
 typedef u32 ent_spec_decl(ent_id);
 sda_declare(ent_spec_decl(ent_id), ent_max_children, ent_spec_decl(ent_id_sda));
 

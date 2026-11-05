@@ -1,6 +1,5 @@
 SRCS += main.c\
 		jgfx.c\
-		cmd_line_args.c\
 		depth_pass.c\
 		gbuffer_pass.c\
 		deferred_light_pass.c\

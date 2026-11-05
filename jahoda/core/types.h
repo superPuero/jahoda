@@ -25,6 +25,8 @@ typedef size_t uz;
 typedef ptrdiff_t iz;
 typedef uintptr_t uptr;
 
+typedef const char *cstr;
+
 typedef u8 b8;
 typedef u16 b16;
 typedef u32 b32;
