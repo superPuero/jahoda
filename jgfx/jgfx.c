@@ -32,7 +32,7 @@ typedef struct { render_mesh_id mesh_id; } volatile_mesh;
     X(static_mesh)\
     X(volatile_mesh)
 
-#include "ent.h"
+#include <jahoda/meta/ent.h>
 
 #define ent_add_transform(manager, id, ...)\
 ent_add(manager, id, local_transform, {.scale = {1,1,1}, __VA_ARGS__});\
